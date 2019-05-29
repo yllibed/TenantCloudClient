@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFrameworks>netstandard2.0</TargetFrameworks>
+	</PropertyGroup>
+	<PropertyGroup>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<PackageId>Yllibed.TenantCloudClient</PackageId>
+		<Authors>Carl de Billy</Authors>
+		<Company>Yllibed project</Company>
+		<Product>Tenant Cloud API Client Library</Product>
+		<Description>
+			This client library will reach the TenantCloud undocumented API to extract some useful information.
+
+			** THIS IS NOT AN OFFICIAL API CLIENT FOR TENANTCLOUD ** (anyway there's no such thing as an official API yet)
+		</Description>
+		<Copyright>Copyright (C) 2019 - Carl de Billy - All Rights Reserved</Copyright>
+		<PackageProjectUrl>https://github.com/yllibed/TenantCloudClient</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/yllibed/TenantCloudClient</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+	</PropertyGroup>
+
+		<ItemGroup>
+		<PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
+	</ItemGroup>
+
+</Project>
