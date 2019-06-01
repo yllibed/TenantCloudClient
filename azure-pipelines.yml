@@ -13,9 +13,12 @@ variables:
   solution: '**/*.sln'
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
+  nugetPackages: '**\*.nupkg'
 
 steps:
 - task: GitVersion@4
+  inputs:
+    updateAssemblyInfo: true
 
 - task: NuGetToolInstaller@0
 
@@ -28,7 +31,16 @@ steps:
     solution: '$(solution)'
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
-    msbuildArgs: '/p:AssemblyVersion=$(GitVersion.AssemblySemVer) /p:FileVersion=$(GitVersion.AssemblySemFileVer) /p:InformationalVersion=$(GitVersion.InformationalVersion) /p:SkipInvalidConfigurations=true /p:PackageLocation="$(build.artifactstagingdirectory)\\"' 
+    msbuildArgs: '/p:PackageVersion=$(GitVersion.AssemblySemVer) /p:AssemblyVersion=$(GitVersion.AssemblySemVer) /p:FileVersion=$(GitVersion.AssemblySemFileVer) /p:InformationalVersion=$(GitVersion.InformationalVersion) /p:SkipInvalidConfigurations=true' 
+
+- task: CopyFiles@2
+  inputs:
+    SourceFolder: $(build.sourcesdirectory)
+    Contents: $(nugetPackages)
+    TargetFolder: $(build.artifactstagingdirectory)
+    CleanTargetFolder: false
+    OverWrite: false
+    flattenFolders: true
 
 - task: VSTest@2
   inputs:
