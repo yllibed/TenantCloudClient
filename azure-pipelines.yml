@@ -16,7 +16,6 @@ variables:
 
 steps:
 - task: GitVersion@4
-  inputs:
 
 - task: NuGetToolInstaller@0
 
