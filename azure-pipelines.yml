@@ -31,7 +31,7 @@ steps:
     solution: '$(solution)'
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
-    msbuildArgs: '/p:PackageVersion=$(GitVersion.AssemblySemVer) /p:AssemblyVersion=$(GitVersion.AssemblySemVer) /p:FileVersion=$(GitVersion.AssemblySemFileVer) /p:InformationalVersion=$(GitVersion.InformationalVersion) /p:SkipInvalidConfigurations=true' 
+    msbuildArgs: '/p:Version=$(GitVersion.AssemblySemVer) /p:PackageVersion=$(GitVersion.AssemblySemVer) /p:AssemblyVersion=$(GitVersion.AssemblySemVer) /p:FileVersion=$(GitVersion.AssemblySemFileVer) /p:InformationalVersion=$(GitVersion.InformationalVersion) /p:SkipInvalidConfigurations=true' 
 
 - task: CopyFiles@2
   inputs:
