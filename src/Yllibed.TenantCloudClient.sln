@@ -5,6 +5,13 @@ VisualStudioVersion = 16.0.28714.193
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Yllibed.TenantCloudClient", "Yllibed.TenantCloudClient\Yllibed.TenantCloudClient.csproj", "{F698BDE6-7498-4CE6-8BE8-F1AA3339E04A}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Project", "Project", "{89B0D1D7-7A2C-41CB-A570-1A5D2022E7DA}"
+	ProjectSection(SolutionItems) = preProject
+		..\azure-pipelines.yml = ..\azure-pipelines.yml
+		..\gitversion.yml = ..\gitversion.yml
+		..\README.md = ..\README.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

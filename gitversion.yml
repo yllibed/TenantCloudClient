@@ -1,0 +1,22 @@
+    
+assembly-versioning-scheme: MajorMinorPatch
+mode: ContinuousDeployment
+next-version: 1.0.0
+continuous-delivery-fallback-tag: ""
+branches:
+  master:
+    increment: none
+    tag: dev
+    regex: master
+  stable:
+    regex: stable
+    tag: 
+    increment: none
+    source-branches: ['master']
+  dev:
+    regex: dev/.*?/(.*?)
+    tag: dev.{BranchName}
+    source-branches: ['master']
+
+ignore:
+  sha: []

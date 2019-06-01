@@ -36,7 +36,7 @@ steps:
     TargetFolder: $(build.artifactstagingdirectory)\nuget_pkgs
     CleanTargetFolder: false
     OverWrite: false
-    flattenFolders: false
+    flattenFolders: true
 
 - task: VSTest@2
   inputs:
