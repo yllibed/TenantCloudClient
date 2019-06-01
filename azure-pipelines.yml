@@ -32,7 +32,7 @@ steps:
 - task: CopyFiles@2
   inputs:
     SourceFolder: $(build.sourcesdirectory)
-    Contents: '*.nupkg'
+    Contents: '**\*.nupkg'
     TargetFolder: $(build.artifactstagingdirectory)\nuget_pkgs
     CleanTargetFolder: false
     OverWrite: false
