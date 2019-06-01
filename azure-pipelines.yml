@@ -28,15 +28,7 @@ steps:
     solution: '$(solution)'
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
-
-- task: CopyFiles@2
-  inputs:
-    SourceFolder: $(build.sourcesdirectory)
-    Contents: '**\*.nupkg'
-    TargetFolder: $(build.artifactstagingdirectory)\nuget_pkgs
-    CleanTargetFolder: false
-    OverWrite: false
-    flattenFolders: true
+    msbuildArgs: '/p:AssemblyVersion=$(GitVersion.AssemblySemVer) /p:FileVersion=$(GitVersion.AssemblySemFileVer) /p:InformationalVersion=$(GitVersion.InformationalVersion) /p:SkipInvalidConfigurations=true /p:PackageLocation="$(build.artifactstagingdirectory)\\"' 
 
 - task: VSTest@2
   inputs:
