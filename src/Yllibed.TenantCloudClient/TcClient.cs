@@ -11,7 +11,7 @@ using Yllibed.TenantCloudClient.HttpMessages;
 
 namespace Yllibed.TenantCloudClient
 {
-	public class TcClient : IDisposable
+	public class TcClient : IDisposable, ITcClient
 	{
 		private readonly ITcContext _context;
 		private readonly HttpClient _httpClient;
