@@ -18,6 +18,8 @@
 		<PackageProjectUrl>https://github.com/yllibed/TenantCloudClient</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/yllibed/TenantCloudClient</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageTags>tenantcloud</PackageTags>
 	</PropertyGroup>
 
 		<ItemGroup>
