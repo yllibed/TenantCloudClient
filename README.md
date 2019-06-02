@@ -2,6 +2,8 @@
 This is an unofficial _dotnet_ API client library to connect to [TenantCloud](https://tenantcloud.com),
 a cheap / free online Rental Accounting and Management system.
 
+[![Build Status](https://dev.azure.com/yllibed/TenantCloudClient/_apis/build/status/yllibed.TenantCloudClient?branchName=master)](https://dev.azure.com/yllibed/TenantCloudClient/_build/latest?definitionId=1&branchName=master) [![Nuget](https://img.shields.io/nuget/dt/Yllibed.TenantCloudClient.svg?label=nuget.org)](https://www.nuget.org/packages/Yllibed.TenantCloudClient)
+
 ## Quickstart
 1. Add a reference to the [`Yllibed.TenantCloudClient`](https://www.nuget.org/packages/Yllibed.TenantCloudClient/) nuget package from your project
 2. Create a class to handle credentials:
