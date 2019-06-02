@@ -4,6 +4,9 @@ using System.Threading.Tasks;
 
 namespace Yllibed.TenantCloudClient
 {
+	/// <summary>
+	/// This is the interface the application must implement to use the API.
+	/// </summary>
 	public interface ITcContext
 	{
 		/// <summary>
