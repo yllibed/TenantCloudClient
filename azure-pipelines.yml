@@ -18,7 +18,7 @@ variables:
 steps:
 - task: GitVersion@4
   inputs:
-    updateAssemblyInfo: true
+    updateAssemblyInfo: false
 
 - task: NuGetToolInstaller@0
 
