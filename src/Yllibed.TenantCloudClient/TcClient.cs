@@ -35,7 +35,7 @@ namespace Yllibed.TenantCloudClient
 				BaseAddress = new Uri("https://home.tenantcloud.com/v1/")
 			};
 
-			_httpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("Le4007.maison", "0.1"));
+			_httpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("Yllibed.TenantCloudClient", "0.1"));
 			_httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 			_httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/json"));
 			_httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/plain"));
