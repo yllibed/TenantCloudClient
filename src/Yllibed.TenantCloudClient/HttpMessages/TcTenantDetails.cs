@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
@@ -64,6 +65,26 @@ namespace Yllibed.TenantCloudClient.HttpMessages
 
 		[JsonProperty("leases")]
 		public TcLease[] Leases { get; set; }
+
+		/// <summary>
+		/// Checks if there is any currently active lease for this tenant
+		/// </summary>
+		/// <param name="referenceDate">Reference date to use for check.  Default to "now"</param>
+		public bool HasActiveLease(DateTimeOffset? referenceDate = null)
+		{
+			var dto = referenceDate ?? DateTimeOffset.Now;
+			return Leases.Any(l => l.GetIsActive(dto));
+		}
+
+		/// <summary>
+		/// Checks if there is any currently active or yet unstarted lease for this tenant
+		/// </summary>
+		/// <param name="referenceDate">Reference date to use for check.  Default to "now"</param>
+		public bool HasAnyActiveOrFutureLease(DateTimeOffset? referenceDate = null)
+		{
+			var dto = referenceDate ?? DateTimeOffset.Now;
+			return Leases.Any(l => l.GetIsActive(dto) || l.GetIsFuture(dto));
+		}
 
 		private static readonly Regex EmailRegex = new Regex(
 			@"(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|""(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*"")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])",
