@@ -1,30 +1,29 @@
 ﻿using System;
-using System.ComponentModel.Design;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace Yllibed.TenantCloudClient.HttpMessages
 {
 	public class TcLease
 	{
-		[JsonProperty("id")]
+		[JsonPropertyName("id")]
 		public long Id { get; set; }
 
-		[JsonProperty("amount")]
-		public decimal Amount { get; set; }
+		[JsonPropertyName("name")]
+		public string? Name { get; set; }
 
-		[JsonProperty("created_at")]
+		[JsonPropertyName("created_at")]
 		public DateTimeOffset CreationDate { get; set; }
 
-		[JsonProperty("rent_from")]
+		[JsonPropertyName("rent_from")]
 		public DateTime StartDate { get; set; }
 
-		[JsonProperty("rent_to")]
+		[JsonPropertyName("rent_to")]
 		public DateTime? EndDate { get; set; }
 
-		[JsonProperty("unit_id")]
+		[JsonPropertyName("unit_id")]
 		public long UnitId { get; set; }
 
-		[JsonProperty("lease_status")]
+		[JsonPropertyName("lease_status")]
 		public TcLeaseStatus Status { get; set; }
 
 		[JsonIgnore]

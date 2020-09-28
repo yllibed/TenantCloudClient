@@ -1,7 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>netstandard2.0</TargetFrameworks>
+		<TargetFrameworks>netstandard2.1</TargetFrameworks>
+		<Nullable>enable</Nullable>
 	</PropertyGroup>
 	<PropertyGroup>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -20,10 +21,14 @@
 		<RepositoryType>git</RepositoryType>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageTags>tenantcloud</PackageTags>
+		<LangVersion>8.0</LangVersion>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|netstandard2.1|AnyCPU'">
+	  <WarningsAsErrors>;NU1605;CS8600;CS8602;CS8603</WarningsAsErrors>
 	</PropertyGroup>
 
-		<ItemGroup>
-		<PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
+	<ItemGroup>
+		<PackageReference Include="System.Text.Json" Version="4.7.2" />
 	</ItemGroup>
 
 </Project>

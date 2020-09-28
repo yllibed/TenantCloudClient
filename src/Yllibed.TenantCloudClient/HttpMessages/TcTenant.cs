@@ -1,12 +1,14 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
 
 namespace Yllibed.TenantCloudClient.HttpMessages
 {
 	public class TcTenant
 	{
-		[JsonProperty("id")]
+		[JsonPropertyName("id")]
+		[JsonConverter(typeof(JsonAutoLongConverter))]
 		public long Id { get; set; }
 
-		public string Name { get; set; }
+		[JsonPropertyName("name")]
+		public string Name { get; set; } = string.Empty;
 	}
 }

@@ -1,17 +1,19 @@
-﻿using Newtonsoft.Json;
+﻿using System;
+using System.Text.Json.Serialization;
 
 namespace Yllibed.TenantCloudClient.HttpMessages
 {
 	public class TcProperty
 	{
-		[JsonProperty("id")]
+		[JsonPropertyName("id")]
+		[JsonConverter(typeof(JsonAutoLongConverter))]
 		public long Id { get; set; }
 
-		public string Name { get; set; }
+		public string? Name => Attributes?.Name;
 
-		[JsonProperty("fullAddress")]
-		public string Address { get; set; }
+		public string Address => $"{Attributes?.Address1} {Attributes?.CityAddress}";
 
-		public TcUnit[] Units { get; set; }
+		[JsonPropertyName("attributes")]
+		public TcPropertyAttributes? Attributes { get; set; }
 	}
 }
