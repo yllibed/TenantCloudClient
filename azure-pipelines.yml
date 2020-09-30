@@ -20,8 +20,6 @@ steps:
   inputs:
     updateAssemblyInfo: false
 
-- task: NuGetToolInstaller@0
-
 - task: NuGetCommand@2
   inputs:
     restoreSolution: '$(solution)'
@@ -29,9 +27,10 @@ steps:
 - task: VSBuild@1
   inputs:
     solution: '$(solution)'
+    msbuildArgs: '/p:Version=$(GitVersion.AssemblySemVer) /p:PackageVersion=$(GitVersion.FullSemVer) /p:AssemblyVersion=$(GitVersion.AssemblySemVer) /p:FileVersion=$(GitVersion.AssemblySemFileVer) /p:InformationalVersion=$(GitVersion.InformationalVersion) /p:SkipInvalidConfigurations=true'
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
-    msbuildArgs: '/p:Version=$(GitVersion.AssemblySemVer) /p:PackageVersion=$(GitVersion.FullSemVer) /p:AssemblyVersion=$(GitVersion.AssemblySemVer) /p:FileVersion=$(GitVersion.AssemblySemFileVer) /p:InformationalVersion=$(GitVersion.InformationalVersion) /p:SkipInvalidConfigurations=true' 
+    restoreNugetPackages: true
 
 - task: CopyFiles@2
   inputs:
