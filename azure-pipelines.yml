@@ -82,7 +82,6 @@ stages:
                   - task: NuGetCommand@2
                     inputs:
                       command: 'push'
-                      #packagesToPush: '$(Build.ArtifactStagingDirectory)/**/*.nupkg;!$(Build.ArtifactStagingDirectory)/**/*.symbols.nupkg'
-                      packagesToPush: $(System.DefaultWorkingDirectory)/_yllibed.TenantCloudClient/NugetPackages/*.nupkg
+                      packagesToPush: '$(Pipeline.Workspace)/**/*.nupkg;!$(Pipeline.Workspace)/**/*.symbols.nupkg'
                       nuGetFeedType: 'external'
                       publishFeedCredentials: 'nuget.org-carldebilly'
