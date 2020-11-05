@@ -69,13 +69,12 @@ stages:
             PathtoPublish: $(build.artifactstagingdirectory)
             ArtifactName: NugetPackages
             ArtifactType: Container
+
   - stage: Publish
     condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
     jobs:
       - deployment: PublishNuget
-        pool:
-            vmImage: 'windows-latest'
-        environment: production
+        environment: nuget_org
         strategy:
           runOnce:
              deploy:
@@ -83,6 +82,7 @@ stages:
                   - task: NuGetCommand@2
                     inputs:
                       command: 'push'
-                      packagesToPush: '$(Build.ArtifactStagingDirectory)/**/*.nupkg;!$(Build.ArtifactStagingDirectory)/**/*.symbols.nupkg'
+                      #packagesToPush: '$(Build.ArtifactStagingDirectory)/**/*.nupkg;!$(Build.ArtifactStagingDirectory)/**/*.symbols.nupkg'
+                      packagesToPush: $(System.DefaultWorkingDirectory)/_yllibed.TenantCloudClient/NugetPackages/*.nupkg
                       nuGetFeedType: 'external'
                       publishFeedCredentials: 'nuget.org-carldebilly'
