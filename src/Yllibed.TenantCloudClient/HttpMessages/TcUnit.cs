@@ -1,29 +1,32 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
 
 namespace Yllibed.TenantCloudClient.HttpMessages
 {
 	public class TcUnit
 	{
-		[JsonProperty("id")]
+		[JsonPropertyName("id")]
+		[JsonConverter(typeof(JsonAutoLongConverter))]
 		public long Id { get; set; }
 
-		public string Name { get; set; }
-	}
+		[JsonPropertyName("property_id")]
+		public long PropertyId { get; set; }
 
-	public class TcUnitDetails
-	{
-		[JsonProperty("id")]
-		public long Id { get; set; }
+		public string Name { get; set; } = string.Empty;
 
-		public string Name { get; set; }
+		public string? Description { get; set; }
 
-		[JsonProperty("is_rented")]
-		public bool IsRented { get; set; }
-
-		[JsonProperty("price")]
 		public decimal Price { get; set; }
 
-		[JsonProperty("tenants")]
-		public TcTenant[] Tenants { get; set; }
+		[JsonPropertyName("is_rented")]
+		public bool IsRented { get; set; }
+
+		[JsonPropertyName("pets_allowed")]
+		public bool IsPetAllowed { get; set; }
+
+		[JsonPropertyName("is_furnished")]
+		public bool IsFurnished { get; set; }
+
+		[JsonPropertyName("is_utilities")]
+		public bool IsUtilities { get; set; }
 	}
 }

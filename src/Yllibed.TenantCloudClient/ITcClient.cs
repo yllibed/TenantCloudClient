@@ -1,4 +1,6 @@
-﻿using System.Threading;
+﻿using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using Yllibed.TenantCloudClient.HttpMessages;
 
@@ -10,23 +12,18 @@ namespace Yllibed.TenantCloudClient
 	public interface ITcClient
 	{
 		/// <summary>
-		/// Get all non-archived tenants.
+		/// Get information about current signed-in user
 		/// </summary>
-		Task<TcTenant[]> GetActiveTenants(CancellationToken ct);
+		/// <param name="ct"></param>
+		/// <returns></returns>
+		Task<TcUserInfo?> GetUserInfo(CancellationToken ct);
 
-		/// <summary>
-		/// Get details about a particular tenant.
-		/// </summary>
-		Task<TcTenantDetails> GetTenantDetails(CancellationToken ct, long tenantId);
+		IPaginatedSource<TcTenantDetails> Tenants { get; }
 
-		/// <summary>
-		/// Get all properties.
-		/// </summary>
-		Task<TcProperty[]> GetProperties(CancellationToken ct);
+		IPaginatedSource<TcProperty> Properties { get; }
 
-		/// <summary>
-		/// Get details about a property.
-		/// </summary>
-		Task<TcUnitDetails[]> GetUnitDetails(CancellationToken ct, long propertyId);
+		IPaginatedSource<TcUnit> Units { get; }
+
+		IPaginatedSource<TcTransaction> Transactions { get; }
 	}
 }
