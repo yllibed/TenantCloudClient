@@ -6,6 +6,9 @@
 trigger:
 - master
 
+pr:
+- master
+
 variables:
   solution: '**/*.sln'
   buildPlatform: 'Any CPU'
@@ -68,17 +71,24 @@ stages:
             ArtifactType: Container
   - stage: Publish
     jobs:
-      - job: PublishNuget
-        steps:
+      - deployment: PublishNuget
+        pool:
+            vmImage: 'windows-latest'
+        environment: production
+        strategy:
+          runOnce:
+             deploy:
+                steps:
+                  - task: CmdLine@2
+                    inputs:
+                      script: |
+                        echo Write your commands here
+                
+                        echo Hello world
+  
 #          - task: NuGetCommand@2
 #            inputs:
 #              command: 'push'
 #              packagesToPush: '$(Build.ArtifactStagingDirectory)/**/*.nupkg;!$(Build.ArtifactStagingDirectory)/**/*.symbols.nupkg'
 #              nuGetFeedType: 'external'
 #              publishFeedCredentials: 'nuget.org-carldebilly'
-          - task: CmdLine@2
-            inputs:
-              script: |
-                echo Write your commands here
-                
-                echo Hello world
