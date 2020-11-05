@@ -70,6 +70,7 @@ stages:
             ArtifactName: NugetPackages
             ArtifactType: Container
   - stage: Publish
+    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
     jobs:
       - deployment: PublishNuget
         pool:
