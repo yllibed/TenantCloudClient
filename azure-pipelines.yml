@@ -6,59 +6,63 @@
 trigger:
 - master
 
-pool:
-  vmImage: 'windows-latest'
-
 variables:
   solution: '**/*.sln'
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
   nugetPackages: '**\*.nupkg'
 
-steps:
-- task: GitVersion@4
-  inputs:
-    updateAssemblyInfo: false
+stages:
+  - stage: Build
+    jobs:
+      - job: Build
+        pool:
+            vmImage: 'windows-latest'
 
-- task: NuGetCommand@2
-  inputs:
-    restoreSolution: '$(solution)'
+        steps:
+        - task: GitVersion@4
+          inputs:
+            updateAssemblyInfo: false
 
-- task: VSBuild@1
-  inputs:
-    solution: '$(solution)'
-    msbuildArgs: '/p:Version=$(GitVersion.AssemblySemVer) /p:PackageVersion=$(GitVersion.FullSemVer) /p:AssemblyVersion=$(GitVersion.AssemblySemVer) /p:FileVersion=$(GitVersion.AssemblySemFileVer) /p:InformationalVersion=$(GitVersion.InformationalVersion) /p:SkipInvalidConfigurations=true'
-    platform: '$(buildPlatform)'
-    configuration: '$(buildConfiguration)'
-    restoreNugetPackages: true
+        - task: NuGetCommand@2
+          inputs:
+            restoreSolution: '$(solution)'
 
-- task: CopyFiles@2
-  inputs:
-    SourceFolder: $(build.sourcesdirectory)
-    Contents: $(nugetPackages)
-    TargetFolder: $(build.artifactstagingdirectory)
-    CleanTargetFolder: false
-    OverWrite: false
-    flattenFolders: true
+        - task: VSBuild@1
+          inputs:
+            solution: '$(solution)'
+            msbuildArgs: '/p:Version=$(GitVersion.AssemblySemVer) /p:PackageVersion=$(GitVersion.FullSemVer) /p:AssemblyVersion=$(GitVersion.AssemblySemVer) /p:FileVersion=$(GitVersion.AssemblySemFileVer) /p:InformationalVersion=$(GitVersion.InformationalVersion) /p:SkipInvalidConfigurations=true'
+            platform: '$(buildPlatform)'
+            configuration: '$(buildConfiguration)'
+            restoreNugetPackages: true
 
-- task: VSTest@2
-  inputs:
-    testSelector: 'testAssemblies'
-    testAssemblyVer2: |
-      **\*tests.dll
-      !**\*TestAdapter.dll
-      !**\obj\**
-    searchFolder: '$(System.DefaultWorkingDirectory)'
-    runTestsInIsolation: true
-    codeCoverageEnabled: true
-    platform: '$(buildPlatform)'
-    configuration: '$(buildConfiguration)'
-    failOnMinTestsNotRun: true
-    minimumExpectedTests: '5'
+        - task: CopyFiles@2
+          inputs:
+            SourceFolder: $(build.sourcesdirectory)
+            Contents: $(nugetPackages)
+            TargetFolder: $(build.artifactstagingdirectory)
+            CleanTargetFolder: false
+            OverWrite: false
+            flattenFolders: true
 
-- task: PublishBuildArtifacts@1
-  condition: always()
-  inputs:
-    PathtoPublish: $(build.artifactstagingdirectory)
-    ArtifactName: NugetPackages
-    ArtifactType: Container
+        - task: VSTest@2
+          inputs:
+            testSelector: 'testAssemblies'
+            testAssemblyVer2: |
+                **\*tests.dll
+                !**\*TestAdapter.dll
+                !**\obj\**
+            searchFolder: '$(System.DefaultWorkingDirectory)'
+            runTestsInIsolation: true
+            codeCoverageEnabled: true
+            platform: '$(buildPlatform)'
+            configuration: '$(buildConfiguration)'
+            failOnMinTestsNotRun: true
+            minimumExpectedTests: '5'
+
+        - task: PublishBuildArtifacts@1
+          condition: always()
+          inputs:
+            PathtoPublish: $(build.artifactstagingdirectory)
+            ArtifactName: NugetPackages
+            ArtifactType: Container
