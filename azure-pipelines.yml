@@ -66,3 +66,19 @@ stages:
             PathtoPublish: $(build.artifactstagingdirectory)
             ArtifactName: NugetPackages
             ArtifactType: Container
+  - stage: Publish
+    jobs:
+      - job: PublishNuget
+        steps:
+#          - task: NuGetCommand@2
+#            inputs:
+#              command: 'push'
+#              packagesToPush: '$(Build.ArtifactStagingDirectory)/**/*.nupkg;!$(Build.ArtifactStagingDirectory)/**/*.symbols.nupkg'
+#              nuGetFeedType: 'external'
+#              publishFeedCredentials: 'nuget.org-carldebilly'
+          - task: CmdLine@2
+            inputs:
+              script: |
+                echo Write your commands here
+                
+                echo Hello world
