@@ -34,7 +34,7 @@ stages:
         - task: VSBuild@1
           inputs:
             solution: '$(solution)'
-            msbuildArgs: '/p:Version=$(GitVersion.AssemblySemVer) /p:PackageVersion=$(GitVersion.FullSemVer) /p:AssemblyVersion=$(GitVersion.AssemblySemVer) /p:FileVersion=$(GitVersion.AssemblySemFileVer) /p:InformationalVersion=$(GitVersion.InformationalVersion) /p:SkipInvalidConfigurations=true'
+            msbuildArgs: '/p:Version=$(GitVersion.AssemblySemVer) /p:PackageVersion=$(GitVersion.NuGetVersion) /p:AssemblyVersion=$(GitVersion.AssemblySemVer) /p:FileVersion=$(GitVersion.AssemblySemFileVer) /p:InformationalVersion=$(GitVersion.InformationalVersion) /p:SkipInvalidConfigurations=true'
             platform: '$(buildPlatform)'
             configuration: '$(buildConfiguration)'
             restoreNugetPackages: true
