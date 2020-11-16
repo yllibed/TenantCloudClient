@@ -48,20 +48,20 @@ stages:
             OverWrite: false
             flattenFolders: true
 
-#        - task: VSTest@2
-#          inputs:
-#            testSelector: 'testAssemblies'
-#            testAssemblyVer2: |
-#                **\*tests.dll
-#                !**\*TestAdapter.dll
-#                !**\obj\**
-#            searchFolder: '$(System.DefaultWorkingDirectory)'
-#            runTestsInIsolation: true
-#            codeCoverageEnabled: true
-#            platform: '$(buildPlatform)'
-#            configuration: '$(buildConfiguration)'
-#            failOnMinTestsNotRun: true
-#            minimumExpectedTests: '5'
+        - task: VSTest@2
+          inputs:
+            testSelector: 'testAssemblies'
+            testAssemblyVer2: |
+                **\*tests.dll
+                !**\*TestAdapter.dll
+                !**\obj\**
+            searchFolder: '$(System.DefaultWorkingDirectory)'
+            runTestsInIsolation: true
+            codeCoverageEnabled: true
+            platform: '$(buildPlatform)'
+            configuration: '$(buildConfiguration)'
+            failOnMinTestsNotRun: true
+            minimumExpectedTests: '5'
 
         - task: PublishBuildArtifacts@1
           condition: always()
