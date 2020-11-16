@@ -23,9 +23,9 @@ stages:
             vmImage: 'windows-latest'
 
         steps:
-        - task: GitVersion@4
+        - task: GitVersion@5
           inputs:
-            updateAssemblyInfo: false
+            runtime: 'core'
 
         - task: NuGetCommand@2
           inputs:
@@ -85,6 +85,7 @@ stages:
                       packagesToPush: '$(Pipeline.Workspace)/**/*.nupkg;!$(Pipeline.Workspace)/**/*.symbols.nupkg'
                       nuGetFeedType: 'external'
                       publishFeedCredentials: 'nuget.org-carldebilly'
+
                   - task: GitHubRelease@1
                     inputs:
                       gitHubConnection: 'carldebilly'
@@ -92,5 +93,7 @@ stages:
                       action: 'create'
                       target: '$(Build.SourceVersion)'
                       tagSource: 'gitTag'
-                      changeLogCompareToRelease: 'lastNonDraftRelease'
+                      tagPattern: '$(GitVersion.NuGetVersion)'
+                      title: '$(GitVersion.NuGetVersion)'
+                      changeLogCompareToRelease: 'lastFullRelease'
                       changeLogType: 'commitBased'
