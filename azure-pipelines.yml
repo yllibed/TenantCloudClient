@@ -85,3 +85,12 @@ stages:
                       packagesToPush: '$(Pipeline.Workspace)/**/*.nupkg;!$(Pipeline.Workspace)/**/*.symbols.nupkg'
                       nuGetFeedType: 'external'
                       publishFeedCredentials: 'nuget.org-carldebilly'
+                  - task: GitHubRelease@1
+                    inputs:
+                      gitHubConnection: 'carldebilly'
+                      repositoryName: '$(Build.Repository.Name)'
+                      action: 'create'
+                      target: '$(Build.SourceVersion)'
+                      tagSource: 'gitTag'
+                      changeLogCompareToRelease: 'lastNonDraftRelease'
+                      changeLogType: 'commitBased'
