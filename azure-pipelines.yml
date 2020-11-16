@@ -33,7 +33,7 @@ stages:
         - task: VSBuild@1
           inputs:
             solution: '$(solution)'
-            msbuildArgs: '/p:Version=$(GitVersion.AssemblySemVer) /p:PackageVersion=$(GitVersion.AssemblySemVer) /p:AssemblyVersion=$(GitVersion.AssemblySemVer) /p:FileVersion=$(GitVersion.AssemblySemFileVer) /p:InformationalVersion=$(GitVersion.InformationalVersion) /p:SkipInvalidConfigurations=true'
+            msbuildArgs: '/p:Version=$(GitVersion.AssemblySemVer) /p:PackageVersion=$(GitVersion.FullSemVer) /p:AssemblyVersion=$(GitVersion.AssemblySemVer) /p:FileVersion=$(GitVersion.AssemblySemFileVer) /p:InformationalVersion=$(GitVersion.InformationalVersion) /p:SkipInvalidConfigurations=true'
             platform: '$(buildPlatform)'
             configuration: '$(buildConfiguration)'
             restoreNugetPackages: true
@@ -91,8 +91,8 @@ stages:
                       repositoryName: '$(Build.Repository.Name)'
                       action: 'create'
                       target: '$(Build.SourceVersion)'
-                      tagSource: 'gitTag'
-                      tagPattern: '$(GitVersion.AssemblySemVer)'
-                      title: '$(GitVersion.AssemblySemVer)'
-                      changeLogCompareToRelease: 'lastFullRelease'
+                      tagSource: 'userSpecifiedTag'
+                      tag: '$(GitVersion.FullSemVer)'
+                      title: '$(GitVersion.FullSemVer)'
+                      changeLogCompareToRelease: 'lastNonDraftRelease'
                       changeLogType: 'commitBased'
