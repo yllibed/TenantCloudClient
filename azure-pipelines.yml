@@ -23,9 +23,8 @@ stages:
             vmImage: 'windows-latest'
 
         steps:
-        - task: GitVersion@5
-          inputs:
-            runtime: 'core'
+        - task: GitVersion@4
+
 
         - task: NuGetCommand@2
           inputs:
@@ -34,7 +33,7 @@ stages:
         - task: VSBuild@1
           inputs:
             solution: '$(solution)'
-            msbuildArgs: '/p:Version=$(GitVersion.AssemblySemVer) /p:PackageVersion=$(GitVersion.NuGetVersion) /p:AssemblyVersion=$(GitVersion.AssemblySemVer) /p:FileVersion=$(GitVersion.AssemblySemFileVer) /p:InformationalVersion=$(GitVersion.InformationalVersion) /p:SkipInvalidConfigurations=true'
+            msbuildArgs: '/p:Version=$(GitVersion.AssemblySemVer) /p:PackageVersion=$(GitVersion.AssemblySemVer) /p:AssemblyVersion=$(GitVersion.AssemblySemVer) /p:FileVersion=$(GitVersion.AssemblySemFileVer) /p:InformationalVersion=$(GitVersion.InformationalVersion) /p:SkipInvalidConfigurations=true'
             platform: '$(buildPlatform)'
             configuration: '$(buildConfiguration)'
             restoreNugetPackages: true
@@ -93,7 +92,7 @@ stages:
                       action: 'create'
                       target: '$(Build.SourceVersion)'
                       tagSource: 'gitTag'
-                      tagPattern: '$(GitVersion.NuGetVersion)'
-                      title: '$(GitVersion.NuGetVersion)'
+                      tagPattern: '$(GitVersion.AssemblySemVer)'
+                      title: '$(GitVersion.AssemblySemVer)'
                       changeLogCompareToRelease: 'lastFullRelease'
                       changeLogType: 'commitBased'
