@@ -11,7 +11,7 @@ a cheap / free online Rental Accounting and Management system.
 1. Add a reference to the [`Yllibed.TenantCloudClient`](https://www.nuget.org/packages/Yllibed.TenantCloudClient/) nuget package in the project
 2. Create a TenantCloud context:
    ``` csharp
-       var tcContext = new InMemotyTcContext("username@domain.tld", "password");
+       var tcContext = new InMemoryTcContext("username@domain.tld", "password");
    ```
 3. Make a call:
    ``` csharp
