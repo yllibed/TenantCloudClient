@@ -9,48 +9,18 @@ a cheap / free online Rental Accounting and Management system.
 ## Quickstart
 
 1. Add a reference to the [`Yllibed.TenantCloudClient`](https://www.nuget.org/packages/Yllibed.TenantCloudClient/) nuget package in the project
-2. Create a class to handle credentials:
+2. Create a TenantCloud context:
    ``` csharp
-       internal class TenantCloudContext : Yllibed.TenantCloudClient.ITcContext
-       {
-           private string _token;
-
-           public async Task<NetworkCredential> GetCredentials(CancellationToken ct)
-           {
-               // Implement this method to return credentials for login.
-               // It's async, so you can fetch it from a file or an external system.
-               return new NetworkCredential("username@domain.tld", "password");
-
-               // Note: please, don't hard-code it in your code!
-           }
-
-           public async Task SetAuthToken(CancellationToken ct, string token)
-           {
-               // Implement this method to persist the authentication token
-               // somewhere.
-               _token = token;
-
-               // Note: you treat the token as sensitive data like credentials.
-           }
-
-           public async Task<string> GetAuthToken(CancellationToken ct)
-           {
-               // Implement this to retrieve the token from your peristed state.
-               return _token;
-
-               // Note: will be called each time a token is required, you may want to cache it.
-           }
-       }
+       var tcContext = new InMemotyTcContext("username@domain.tld", "password");
    ```
 3. Make a call:
    ``` csharp
    public async RefreshTenants(CancellationToken ct, TenantCloudContext tcContext)
    {
-       // tcContext is an instance of the class created at the previous step
        var client = new TcClient(tcContext);
-    var activeTenants = await client.Tenants.GetAll(ct);
+       var activeTenants = await client.Tenants.GetAll(ct);
    
-       // do something fun with activeTenants here...
+       // do something funny with activeTenants here...
    }
    ```
 
@@ -62,7 +32,7 @@ a cheap / free online Rental Accounting and Management system.
   * Most other _Mono_ 6.4+ environment, except _WebAssembly_ like _Blazor_ or [Uno.BootStrapper](https://github.com/nventive/Uno.Wasm.Bootstrap) because they need a custom http handler - open
   an issue if you need support for those.
 * Will automatically renew the authentication token.
-* Absolutely no external dependency (except `System.Text.Json` but it's part of the framework)
+* Absolutely no external dependency (except `System.Text.Json` but it's now part of the framework)
 * No enforced patterns: your code is responsible for the token persistence and the security of credentials.
 * Compatible with most/all IoC containers.
 
