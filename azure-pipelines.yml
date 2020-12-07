@@ -92,8 +92,7 @@ stages:
                       action: 'create'
                       target: '$(Build.SourceVersion)'
                       tagSource: 'userSpecifiedTag'
-                      tag: '$(GitVersion.FullSemVer)'
-                      title: '$(GitVersion.FullSemVer)'
-                      isPreRelease: true
+                      tag: '$(Build.BuildNumber)'
+                      title: '$(Build.BuildNumber)'
                       changeLogCompareToRelease: 'lastNonDraftRelease'
                       changeLogType: 'commitBased'
