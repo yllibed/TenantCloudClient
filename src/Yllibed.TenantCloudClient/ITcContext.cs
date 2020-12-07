@@ -34,6 +34,6 @@ namespace Yllibed.TenantCloudClient
 		/// TcClient won't cache it and will call this method each time the token
 		/// is required. You should have a mechanism to serve it from cached memory.
 		/// </remarks>
-		Task<string> GetAuthToken(CancellationToken ct);
+		Task<string?> GetAuthToken(CancellationToken ct);
 	}
 }

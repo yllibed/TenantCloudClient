@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -165,7 +164,7 @@ namespace Yllibed.TenantCloudClient
 			}
 		}
 
-		private HttpContent GetJsonContent(object entity)
+		private static HttpContent GetJsonContent(object entity)
 		{
 			var payload = JsonSerializer.Serialize(entity);
 			return new StringContent(payload, _encoding, "application/json");

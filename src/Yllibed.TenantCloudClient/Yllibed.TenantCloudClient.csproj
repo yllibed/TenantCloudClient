@@ -4,6 +4,7 @@
 		<TargetFrameworks>netstandard2.1</TargetFrameworks>
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
+
 	<PropertyGroup>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<PackageId>Yllibed.TenantCloudClient</PackageId>

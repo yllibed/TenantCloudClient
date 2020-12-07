@@ -1,3 +1,4 @@
+using System;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,23 +10,51 @@ namespace Yllibed.TenantCloudClient
 	/// </summary>
 	public class InMemoryTcContext : ITcContext
 	{
-		private string _token;
+		private readonly Func<CancellationToken, Task<NetworkCredential>> _credentials;
+		private string? _token;
 
-		public Task<NetworkCredential> GetCredentials(CancellationToken ct)
+		public InMemoryTcContext(Func<CancellationToken, Task<NetworkCredential>> asyncCredentialsCallback)
 		{
-			var credentials = new NetworkCredential("hass@le4007.maison", "d7ZZ29&kZSywP3*XD");
-
-			return Task.FromResult(credentials);
+			_credentials = asyncCredentialsCallback;
 		}
 
-		public async Task SetAuthToken(CancellationToken ct, string token)
+		public InMemoryTcContext(Func<CancellationToken, Task<(string username, string password)>> asyncCredentialsCallback)
+		{
+			_credentials = async ct =>
+			{
+				var (username, password) = await asyncCredentialsCallback(ct);
+				return new NetworkCredential(username, password);
+			};
+		}
+
+		public InMemoryTcContext(Func<NetworkCredential> credentialsCallback)
+		{
+			_credentials = _ => Task.FromResult(credentialsCallback());
+		}
+
+		public InMemoryTcContext(NetworkCredential credentials)
+		{
+			_credentials = _ => Task.FromResult(credentials);
+		}
+
+		public InMemoryTcContext(string username, string password)
+		{
+			var credentials = new NetworkCredential(username, password);
+			_credentials = _ => Task.FromResult(credentials);
+		}
+
+		public Task<NetworkCredential> GetCredentials(CancellationToken ct) => _credentials(ct);
+
+		public Task SetAuthToken(CancellationToken ct, string token)
 		{
 			_token = token;
+
+			return Task.CompletedTask;
 		}
 
-		public async Task<string> GetAuthToken(CancellationToken ct)
+		public Task<string?> GetAuthToken(CancellationToken ct)
 		{
-			return _token;
+			return Task.FromResult(_token);
 		}
 	}
 }
