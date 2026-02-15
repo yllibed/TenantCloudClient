@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 namespace Yllibed.TenantCloudClient.HttpMessages;
 
 [JsonSourceGenerationOptions(
@@ -12,6 +10,7 @@ namespace Yllibed.TenantCloudClient.HttpMessages;
 [JsonSerializable(typeof(TcJsonApiResponse<TcTransaction>))]
 [JsonSerializable(typeof(TcJsonApiResponse<TcLease>))]
 [JsonSerializable(typeof(TcErrorResponse))]
+[JsonSerializable(typeof(TcTokenSet))]
 internal partial class TcJsonSerializerContext : JsonSerializerContext
 {
 }
