@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+		<!-- XML docs will be added incrementally -->
+		<NoWarn>CS1591</NoWarn>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<PackageId>Yllibed.TenantCloudClient.Cdp</PackageId>
+		<Authors>Carl de Billy</Authors>
+		<Company>Yllibed project</Company>
+		<Product>Tenant Cloud API Client - CDP Token Provider</Product>
+		<Description>
+			Chrome DevTools Protocol (CDP) based token provider for
+			Yllibed.TenantCloudClient. Extracts auth tokens from
+			an existing browser session — no external NuGet dependencies.
+		</Description>
+		<Copyright>Copyright (C) 2019 - Carl de Billy - All Rights Reserved</Copyright>
+		<PackageProjectUrl>https://github.com/yllibed/TenantCloudClient</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/yllibed/TenantCloudClient</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageTags>tenantcloud;cdp</PackageTags>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Yllibed.TenantCloudClient\Yllibed.TenantCloudClient.csproj" />
+	</ItemGroup>
+
+</Project>
