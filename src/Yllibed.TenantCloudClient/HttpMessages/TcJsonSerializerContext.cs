@@ -6,10 +6,11 @@ namespace Yllibed.TenantCloudClient.HttpMessages;
 	AllowTrailingCommas = true,
 	PropertyNameCaseInsensitive = true)]
 [JsonSerializable(typeof(TcUserInfoResponse))]
-[JsonSerializable(typeof(TcListResponse<TcTenantDetails>))]
-[JsonSerializable(typeof(TcPagingListResponse<TcProperty>))]
-[JsonSerializable(typeof(TcListResponse<TcUnit>))]
-[JsonSerializable(typeof(TcListResponse<TcTransaction>))]
+[JsonSerializable(typeof(TcJsonApiResponse<TcContact>))]
+[JsonSerializable(typeof(TcJsonApiResponse<TcProperty>))]
+[JsonSerializable(typeof(TcJsonApiResponse<TcUnit>))]
+[JsonSerializable(typeof(TcJsonApiResponse<TcTransaction>))]
+[JsonSerializable(typeof(TcJsonApiResponse<TcLease>))]
 [JsonSerializable(typeof(TcErrorResponse))]
 internal partial class TcJsonSerializerContext : JsonSerializerContext
 {

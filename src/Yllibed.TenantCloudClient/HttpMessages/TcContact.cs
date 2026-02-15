@@ -3,10 +3,9 @@ using System.Text.RegularExpressions;
 
 namespace Yllibed.TenantCloudClient.HttpMessages;
 
-public partial class TcTenantDetails
+public partial class TcContact : IHasId
 {
-	[JsonPropertyName("id")]
-	[JsonConverter(typeof(JsonAutoLongConverter))]
+	[JsonIgnore]
 	public long Id { get; set; }
 
 	[JsonPropertyName("email")]

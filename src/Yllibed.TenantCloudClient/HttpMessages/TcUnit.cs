@@ -2,10 +2,9 @@ using System.Text.Json.Serialization;
 
 namespace Yllibed.TenantCloudClient.HttpMessages;
 
-public class TcUnit
+public class TcUnit : IHasId
 {
-	[JsonPropertyName("id")]
-	[JsonConverter(typeof(JsonAutoLongConverter))]
+	[JsonIgnore]
 	public long Id { get; set; }
 
 	[JsonPropertyName("property_id")]
