@@ -1,8 +1,9 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>netstandard2.1</TargetFrameworks>
-		<Nullable>enable</Nullable>
+		<TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+		<!-- XML docs will be added incrementally -->
+		<NoWarn>CS1591</NoWarn>
 	</PropertyGroup>
 
 	<PropertyGroup>
@@ -22,14 +23,14 @@
 		<RepositoryType>git</RepositoryType>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageTags>tenantcloud</PackageTags>
-		<LangVersion>8.0</LangVersion>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|netstandard2.1|AnyCPU'">
-	  <WarningsAsErrors>;NU1605;CS8600;CS8602;CS8603</WarningsAsErrors>
 	</PropertyGroup>
 
+	<ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
+		<PackageReference Include="System.Text.Json" />
+	</ItemGroup>
+
 	<ItemGroup>
-		<PackageReference Include="System.Text.Json" Version="4.7.2" />
+		<InternalsVisibleTo Include="Yllibed.TenantCloudClient.Tests" />
 	</ItemGroup>
 
 </Project>

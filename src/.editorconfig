@@ -1,0 +1,7 @@
+[*.cs]
+# VSTHRD200: Async suffix - suppressed because renaming public API methods is a breaking change
+dotnet_diagnostic.VSTHRD200.severity = none
+
+# MA0009: Regex DoS - source-generated regexes with timeout are addressed where practical;
+# complex email regex is intentionally accepted as-is
+dotnet_diagnostic.MA0009.severity = suggestion

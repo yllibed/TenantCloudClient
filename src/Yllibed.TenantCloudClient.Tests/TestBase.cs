@@ -1,11 +1,8 @@
-using Microsoft.Extensions.Configuration;
+namespace Yllibed.TenantCloudClient.Tests;
 
-namespace Yllibed.TenantCloudClient.Tests
+public class TestBase
 {
-	public class TestBase
+	internal TestBase()
 	{
-		internal TestBase()
-		{
-		}
 	}
 }

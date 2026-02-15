@@ -1,0 +1,21 @@
+<Project>
+
+	<PropertyGroup>
+		<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+	</PropertyGroup>
+
+	<ItemGroup Label="Build and versioning">
+		<PackageVersion Include="Nerdbank.GitVersioning" Version="3.9.50" />
+		<PackageVersion Include="Meziantou.Analyzer" Version="2.0.299" />
+		<PackageVersion Include="Microsoft.VisualStudio.Threading.Analyzers" Version="17.14.15" />
+	</ItemGroup>
+
+	<ItemGroup Label="Runtime dependencies">
+		<PackageVersion Include="System.Text.Json" Version="9.0.4" />
+	</ItemGroup>
+
+	<ItemGroup Label="Test dependencies">
+		<PackageVersion Include="AwesomeAssertions" Version="9.3.0" />
+	</ItemGroup>
+
+</Project>
