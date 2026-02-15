@@ -9,7 +9,7 @@ public static class TcTransactionsPaginatedSourceExtensions
 	{
 		if (source is PaginatedSource<TcTransaction> paginatedSource)
 		{
-			return paginatedSource.ProjectedWithExtraUrl(url => url + "&client=" + tenantId.ToString(NumberFormatInfo.InvariantInfo));
+			return paginatedSource.ProjectedWithExtraUrl(url => url + "&filter[client_id]=" + tenantId.ToString(NumberFormatInfo.InvariantInfo));
 		}
 
 		throw new ArgumentException("Invalid source.", nameof(source));
@@ -19,7 +19,7 @@ public static class TcTransactionsPaginatedSourceExtensions
 	{
 		if (source is PaginatedSource<TcTransaction> paginatedSource)
 		{
-			return paginatedSource.ProjectedWithExtraUrl(url => url + "&property=" + propertyId.ToString(NumberFormatInfo.InvariantInfo));
+			return paginatedSource.ProjectedWithExtraUrl(url => url + "&filter[property_id][]=" + propertyId.ToString(NumberFormatInfo.InvariantInfo));
 		}
 
 		throw new ArgumentException("Invalid source.", nameof(source));
@@ -29,7 +29,7 @@ public static class TcTransactionsPaginatedSourceExtensions
 	{
 		if (source is PaginatedSource<TcTransaction> paginatedSource)
 		{
-			return paginatedSource.ProjectedWithExtraUrl(url => url + "&unit=" + unitId.ToString(NumberFormatInfo.InvariantInfo));
+			return paginatedSource.ProjectedWithExtraUrl(url => url + "&filter[unit_id]=" + unitId.ToString(NumberFormatInfo.InvariantInfo));
 		}
 
 		throw new ArgumentException("Invalid source.", nameof(source));
@@ -39,7 +39,7 @@ public static class TcTransactionsPaginatedSourceExtensions
 	{
 		if (source is PaginatedSource<TcTransaction> paginatedSource)
 		{
-			return paginatedSource.ProjectedWithExtraUrl(url => url + "&status=" + status.ToSerializedString());
+			return paginatedSource.ProjectedWithExtraUrl(url => url + "&filter[status]=" + status.ToSerializedString());
 		}
 
 		throw new ArgumentException("Invalid source.", nameof(source));
@@ -49,7 +49,17 @@ public static class TcTransactionsPaginatedSourceExtensions
 	{
 		if (source is PaginatedSource<TcTransaction> paginatedSource)
 		{
-			return paginatedSource.ProjectedWithExtraUrl(url => url + "&category=" + category.ToString().ToLowerInvariant());
+			return paginatedSource.ProjectedWithExtraUrl(url => url + "&filter[category][]=" + category.ToString().ToLowerInvariant());
+		}
+
+		throw new ArgumentException("Invalid source.", nameof(source));
+	}
+
+	public static IPaginatedSource<TcTransaction> SortByDateDescending(this IPaginatedSource<TcTransaction> source)
+	{
+		if (source is PaginatedSource<TcTransaction> paginatedSource)
+		{
+			return paginatedSource.ProjectedWithExtraUrl(url => url + "&sort=-date,-id");
 		}
 
 		throw new ArgumentException("Invalid source.", nameof(source));

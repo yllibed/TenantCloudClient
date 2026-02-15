@@ -9,7 +9,7 @@ public static class TcUnitsPaginatedSourceExtensions
 	{
 		if (source is PaginatedSource<TcUnit> paginatedSource)
 		{
-			return paginatedSource.ProjectedWithExtraUrl(url => url + "&display=occuped");
+			return paginatedSource.ProjectedWithExtraUrl(url => url + "&filter[is_rented]=true");
 		}
 
 		throw new ArgumentException("Invalid source.", nameof(source));
@@ -19,7 +19,7 @@ public static class TcUnitsPaginatedSourceExtensions
 	{
 		if (source is PaginatedSource<TcUnit> paginatedSource)
 		{
-			return paginatedSource.ProjectedWithExtraUrl(url => url + "&display=vacant");
+			return paginatedSource.ProjectedWithExtraUrl(url => url + "&filter[is_rented]=false");
 		}
 
 		throw new ArgumentException("Invalid source.", nameof(source));
@@ -29,7 +29,7 @@ public static class TcUnitsPaginatedSourceExtensions
 	{
 		if (source is PaginatedSource<TcUnit> paginatedSource)
 		{
-			return paginatedSource.ProjectedWithExtraUrl(url => url + "&property=" + propertyId.ToString(NumberFormatInfo.InvariantInfo));
+			return paginatedSource.ProjectedWithExtraUrl(url => url + "&filter[property_id][]=" + propertyId.ToString(NumberFormatInfo.InvariantInfo));
 		}
 
 		throw new ArgumentException("Invalid source.", nameof(source));
