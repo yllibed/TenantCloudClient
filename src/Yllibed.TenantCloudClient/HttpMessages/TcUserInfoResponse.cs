@@ -1,7 +1,6 @@
-﻿namespace Yllibed.TenantCloudClient.HttpMessages
+namespace Yllibed.TenantCloudClient.HttpMessages;
+
+public class TcUserInfoResponse
 {
-	public class TcUserInfoResponse
-	{
-		public TcUserInfo? User { get; set; }
-	}
+	public TcUserInfo? User { get; set; }
 }

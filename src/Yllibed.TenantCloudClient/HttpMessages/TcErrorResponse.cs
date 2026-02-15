@@ -1,10 +1,9 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 
-namespace Yllibed.TenantCloudClient.HttpMessages
+namespace Yllibed.TenantCloudClient.HttpMessages;
+
+public class TcErrorResponse
 {
-	public class TcErrorResponse
-	{
-		[JsonPropertyName("message")]
-		public string? Message { get; set; }
-	}
+	[JsonPropertyName("message")]
+	public string? Message { get; set; }
 }
