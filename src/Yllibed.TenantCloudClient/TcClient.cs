@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -16,13 +17,25 @@ public class TcClient : IDisposable, ITcClient
 	{
 		_tokenProvider = tokenProvider;
 
-		Tenants = new PaginatedSource<TcTenantDetails>(GetTenantPage, "");
+		Contacts = new PaginatedSource<TcContact>(
+			(ct, page, extra) => GetJsonApiPage(ct, "contacts", page, extra,
+				TcJsonSerializerContext.Default.TcJsonApiResponseTcContact), "");
 
-		Properties = new PaginatedSource<TcProperty>(GetPropertyPage, "");
+		Properties = new PaginatedSource<TcProperty>(
+			(ct, page, extra) => GetJsonApiPage(ct, "properties", page, extra,
+				TcJsonSerializerContext.Default.TcJsonApiResponseTcProperty), "");
 
-		Units = new PaginatedSource<TcUnit>(GetUnitsPage, "");
+		Units = new PaginatedSource<TcUnit>(
+			(ct, page, extra) => GetJsonApiPage(ct, "units", page, extra,
+				TcJsonSerializerContext.Default.TcJsonApiResponseTcUnit), "");
 
-		Transactions = new PaginatedSource<TcTransaction>(GetTransactionsPage, "");
+		Transactions = new PaginatedSource<TcTransaction>(
+			(ct, page, extra) => GetJsonApiPage(ct, "transactions", page, extra,
+				TcJsonSerializerContext.Default.TcJsonApiResponseTcTransaction), "");
+
+		Leases = new PaginatedSource<TcLease>(
+			(ct, page, extra) => GetJsonApiPage(ct, "leases", page, extra,
+				TcJsonSerializerContext.Default.TcJsonApiResponseTcLease), "");
 
 		var httpHandler = new HttpClientHandler()
 		{
@@ -34,7 +47,7 @@ public class TcClient : IDisposable, ITcClient
 
 		_httpClient = new HttpClient(httpHandler, true)
 		{
-			BaseAddress = new Uri("https://home.tenantcloud.com/"),
+			BaseAddress = new Uri("https://api.tenantcloud.com/"),
 		};
 
 		_httpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("Yllibed.TenantCloudClient", "0.1"));
@@ -46,44 +59,43 @@ public class TcClient : IDisposable, ITcClient
 
 	public async Task<TcUserInfo?> GetUserInfo(CancellationToken ct)
 	{
-		var result = await HttpGet(ct, "v1/auth/user", TcJsonSerializerContext.Default.TcUserInfoResponse).ConfigureAwait(false);
+		var result = await HttpGet(ct, "auth/user", TcJsonSerializerContext.Default.TcUserInfoResponse).ConfigureAwait(false);
 		return result?.User;
 	}
 
-	public IPaginatedSource<TcTenantDetails> Tenants { get; }
-
-	private async Task<(ReadOnlyMemory<TcTenantDetails>, long, long)> GetTenantPage(CancellationToken ct, long pageNo, string extraUrl)
-	{
-		var response = await HttpGet(ct, "v1/landlord/tenants?page=" + pageNo.ToString(System.Globalization.CultureInfo.InvariantCulture) + extraUrl, TcJsonSerializerContext.Default.TcListResponseTcTenantDetails).ConfigureAwait(false);
-		var memory = new Memory<TcTenantDetails>(response.Entries);
-		return (memory, pageNo, response?.Pagination?.Total ?? 0);
-	}
+	public IPaginatedSource<TcContact> Contacts { get; }
 
 	public IPaginatedSource<TcProperty> Properties { get; }
 
-	private async Task<(ReadOnlyMemory<TcProperty>, long, long)> GetPropertyPage(CancellationToken ct, long pageNo, string extraUrl)
-	{
-		var response = await HttpGet(ct, "v2/property?fields[property]=name,property_status,address1,cityAddress&page=" + pageNo.ToString(System.Globalization.CultureInfo.InvariantCulture) + extraUrl, TcJsonSerializerContext.Default.TcPagingListResponseTcProperty).ConfigureAwait(false);
-		var memory = new Memory<TcProperty>(response.Entries);
-		return (memory, pageNo, response?.Meta?.Pagination?.Total ?? 0);
-	}
-
 	public IPaginatedSource<TcUnit> Units { get; }
-
-	private async Task<(ReadOnlyMemory<TcUnit>, long, long)> GetUnitsPage(CancellationToken ct, long pageNo, string extraUrl)
-	{
-		var response = await HttpGet(ct, "v1/landlord/units?page=" + pageNo.ToString(System.Globalization.CultureInfo.InvariantCulture) + extraUrl, TcJsonSerializerContext.Default.TcListResponseTcUnit).ConfigureAwait(false);
-		var memory = new Memory<TcUnit>(response.Entries);
-		return (memory, pageNo, response?.Pagination?.Total ?? 0);
-	}
 
 	public IPaginatedSource<TcTransaction> Transactions { get; }
 
-	private async Task<(ReadOnlyMemory<TcTransaction>, long, long)> GetTransactionsPage(CancellationToken ct, long pageNo, string extraUrl)
+	public IPaginatedSource<TcLease> Leases { get; }
+
+	private async Task<(ReadOnlyMemory<T>, long, long)> GetJsonApiPage<T>(
+		CancellationToken ct, string endpoint, long pageNo, string extraUrl,
+		JsonTypeInfo<TcJsonApiResponse<T>> typeInfo)
+		where T : class, IHasId
 	{
-		var response = await HttpGet(ct, "v1/landlord/transactions?page=" + pageNo.ToString(System.Globalization.CultureInfo.InvariantCulture) + extraUrl, TcJsonSerializerContext.Default.TcListResponseTcTransaction).ConfigureAwait(false);
-		var memory = new Memory<TcTransaction>(response.Entries);
-		return (memory, pageNo, response?.Pagination?.Total ?? 0);
+		var url = endpoint + "?page=" + pageNo.ToString(CultureInfo.InvariantCulture) + extraUrl;
+		var response = await HttpGet(ct, url, typeInfo).ConfigureAwait(false);
+
+		var entries = response.Data?
+			.Select(item =>
+			{
+				var attr = item.Attributes;
+				if (attr is not null)
+				{
+					attr.Id = item.Id;
+				}
+
+				return attr!;
+			})
+			.Where(a => a is not null)
+			.ToArray() ?? Array.Empty<T>();
+
+		return (entries.AsMemory(), pageNo, response.Meta?.Pagination?.Total ?? 0);
 	}
 
 	private async Task<T> HttpGet<T>(CancellationToken ct, string uri, JsonTypeInfo<T> typeInfo)

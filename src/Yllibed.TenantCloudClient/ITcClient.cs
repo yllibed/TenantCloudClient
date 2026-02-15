@@ -12,11 +12,13 @@ public interface ITcClient
 	/// </summary>
 	Task<TcUserInfo?> GetUserInfo(CancellationToken ct);
 
-	IPaginatedSource<TcTenantDetails> Tenants { get; }
+	IPaginatedSource<TcContact> Contacts { get; }
 
 	IPaginatedSource<TcProperty> Properties { get; }
 
 	IPaginatedSource<TcUnit> Units { get; }
 
 	IPaginatedSource<TcTransaction> Transactions { get; }
+
+	IPaginatedSource<TcLease> Leases { get; }
 }
