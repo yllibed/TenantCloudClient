@@ -1,6 +1,4 @@
-using System.Text.Json.Serialization;
-
-namespace Yllibed.TenantCloudClient.Cdp;
+namespace Yllibed.TenantCloudClient;
 
 /// <summary>
 /// Holds the three pieces required for TenantCloud API authentication and token refresh.

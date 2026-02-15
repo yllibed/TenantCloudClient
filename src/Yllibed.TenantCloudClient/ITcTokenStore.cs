@@ -1,4 +1,4 @@
-namespace Yllibed.TenantCloudClient.Cdp;
+namespace Yllibed.TenantCloudClient;
 
 /// <summary>
 /// Persists TenantCloud auth tokens across sessions.
