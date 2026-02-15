@@ -11,8 +11,6 @@ namespace Yllibed.TenantCloudClient.HttpMessages;
 [JsonSerializable(typeof(TcListResponse<TcUnit>))]
 [JsonSerializable(typeof(TcListResponse<TcTransaction>))]
 [JsonSerializable(typeof(TcErrorResponse))]
-[JsonSerializable(typeof(TcLoginResponse))]
-[JsonSerializable(typeof(TcLoginRequest))]
 internal partial class TcJsonSerializerContext : JsonSerializerContext
 {
 }

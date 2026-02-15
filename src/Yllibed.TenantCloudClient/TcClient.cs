@@ -1,7 +1,6 @@
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using Yllibed.TenantCloudClient.HttpMessages;
@@ -10,14 +9,12 @@ namespace Yllibed.TenantCloudClient;
 
 public class TcClient : IDisposable, ITcClient
 {
-	private readonly ITcContext _context;
+	private readonly ITcAuthTokenProvider _tokenProvider;
 	private readonly HttpClient _httpClient;
 
-	private static readonly Encoding _encoding = new UTF8Encoding(false);
-
-	public TcClient(ITcContext context)
+	public TcClient(ITcAuthTokenProvider tokenProvider)
 	{
-		_context = context;
+		_tokenProvider = tokenProvider;
 
 		Tenants = new PaginatedSource<TcTenantDetails>(GetTenantPage, "");
 
@@ -110,53 +107,37 @@ public class TcClient : IDisposable, ITcClient
 
 	private async Task<HttpResponseMessage> HttpSend(CancellationToken ct, HttpRequestMessage request)
 	{
-		var token = await _context.GetAuthToken(ct).ConfigureAwait(false);
+		var token = await _tokenProvider.GetToken(ct).ConfigureAwait(false);
 
-		if (!string.IsNullOrEmpty(token))
+		if (string.IsNullOrEmpty(token))
 		{
-			request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-			var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
-
-			if (response.StatusCode != HttpStatusCode.Unauthorized)
-			{
-				return response;
-			}
-
-			request.Headers.Authorization = null;
+			throw new TcClientException(HttpStatusCode.Unauthorized, "No auth token available");
 		}
 
-		var loginRequest = new TcLoginRequest(await _context.GetCredentials(ct).ConfigureAwait(false));
-		var loginRequestMsg = new HttpRequestMessage(HttpMethod.Post, "v1/auth/login")
-		{
-			Content = GetJsonContent(loginRequest),
-		};
+		request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+		var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
 
-		var loginResponse = await _httpClient.SendAsync(loginRequestMsg, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
-
-		if (!loginResponse.IsSuccessStatusCode)
+		if (response.StatusCode != HttpStatusCode.Unauthorized)
 		{
-			throw new TcClientException(loginResponse.StatusCode, "Unable to login");
+			return response;
 		}
 
-		var loginResponseStream = await loginResponse.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
-		await using var __ = loginResponseStream.ConfigureAwait(false);
-		var loginResponsePayload = await JsonSerializer.DeserializeAsync(loginResponseStream, TcJsonSerializerContext.Default.TcLoginResponse, ct).ConfigureAwait(false);
+		// Token was rejected — notify provider and try once more
+		response.Dispose();
+		await _tokenProvider.OnTokenRejected(ct, token).ConfigureAwait(false);
 
-		if ((token = loginResponsePayload?.AccessToken) is null)
+		var newToken = await _tokenProvider.GetToken(ct).ConfigureAwait(false);
+
+		if (string.IsNullOrEmpty(newToken) || string.Equals(newToken, token, StringComparison.Ordinal))
 		{
-			throw new TcClientException(loginResponse.StatusCode, "Invalid login response");
+			throw new TcClientException(HttpStatusCode.Unauthorized, "Auth token rejected and no new token available");
 		}
 
-		await _context.SetAuthToken(ct, token).ConfigureAwait(false);
+		// HttpRequestMessage cannot be reused after SendAsync, so create a new one
+		var retryRequest = new HttpRequestMessage(request.Method, request.RequestUri);
+		retryRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", newToken);
 
-		request.Headers.Authorization = new AuthenticationHeaderValue(loginResponsePayload?.TokenType ?? "Bearer", token);
-		return await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
-	}
-
-	private static HttpContent GetJsonContent(TcLoginRequest entity)
-	{
-		var payload = JsonSerializer.Serialize(entity, TcJsonSerializerContext.Default.TcLoginRequest);
-		return new StringContent(payload, _encoding, "application/json");
+		return await _httpClient.SendAsync(retryRequest, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
 	}
 
 	public void Dispose()
