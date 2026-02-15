@@ -1,5 +1,3 @@
-using System.Text.Json;
-
 namespace Yllibed.TenantCloudClient.Cdp;
 
 /// <summary>

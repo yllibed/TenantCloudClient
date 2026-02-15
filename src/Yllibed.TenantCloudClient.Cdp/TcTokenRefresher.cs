@@ -1,7 +1,5 @@
 using System.Net.Http.Headers;
 using System.Text;
-using System.Text.Json;
-using Yllibed.TenantCloudClient.Cdp.CdpMessages;
 
 namespace Yllibed.TenantCloudClient.Cdp;
 

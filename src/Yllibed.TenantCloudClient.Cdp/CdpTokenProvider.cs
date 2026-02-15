@@ -1,6 +1,4 @@
 using System.Diagnostics;
-using System.Text.Json;
-using Yllibed.TenantCloudClient.Cdp.CdpMessages;
 
 namespace Yllibed.TenantCloudClient.Cdp;
 

@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 namespace Yllibed.TenantCloudClient.HttpMessages;
 
 public class TcTenant

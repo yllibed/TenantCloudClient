@@ -1,6 +1,3 @@
-using System.Text.Json;
-using Yllibed.TenantCloudClient.Cdp.CdpMessages;
-
 namespace Yllibed.TenantCloudClient.Cdp;
 
 internal static class CdpBrowserDiscovery

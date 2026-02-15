@@ -1,6 +1,3 @@
-using System.Text.Json.Serialization;
-using Yllibed.TenantCloudClient.Cdp.CdpMessages;
-
 namespace Yllibed.TenantCloudClient.Cdp;
 
 [JsonSerializable(typeof(CdpTarget[]))]

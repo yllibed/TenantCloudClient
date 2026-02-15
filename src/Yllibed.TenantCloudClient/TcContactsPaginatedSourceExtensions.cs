@@ -1,5 +1,3 @@
-using Yllibed.TenantCloudClient.HttpMessages;
-
 namespace Yllibed.TenantCloudClient;
 
 public static class TcContactsPaginatedSourceExtensions

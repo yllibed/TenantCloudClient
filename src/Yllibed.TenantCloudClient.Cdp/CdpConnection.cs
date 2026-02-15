@@ -1,8 +1,6 @@
 using System.Collections.Concurrent;
 using System.Net.WebSockets;
-using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
-using Yllibed.TenantCloudClient.Cdp.CdpMessages;
 
 namespace Yllibed.TenantCloudClient.Cdp;
 
