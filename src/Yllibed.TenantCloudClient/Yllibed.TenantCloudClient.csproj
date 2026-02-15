@@ -17,7 +17,7 @@
 
 			** THIS IS NOT AN OFFICIAL API CLIENT FOR TENANTCLOUD ** (anyway there's no such thing as an official API yet)
 		</Description>
-		<Copyright>Copyright (C) 2019 - Carl de Billy - All Rights Reserved</Copyright>
+		<Copyright>Copyright (C) 2019-$([System.DateTime]::Now.Year) - Carl de Billy - All Rights Reserved</Copyright>
 		<PackageProjectUrl>https://github.com/yllibed/TenantCloudClient</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/yllibed/TenantCloudClient</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>

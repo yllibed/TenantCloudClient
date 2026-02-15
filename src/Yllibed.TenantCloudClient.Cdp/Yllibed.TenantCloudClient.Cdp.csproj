@@ -17,7 +17,7 @@
 			Yllibed.TenantCloudClient. Extracts auth tokens from
 			an existing browser session — no external NuGet dependencies.
 		</Description>
-		<Copyright>Copyright (C) 2019 - Carl de Billy - All Rights Reserved</Copyright>
+		<Copyright>Copyright (C) 2019-$([System.DateTime]::Now.Year) - Carl de Billy - All Rights Reserved</Copyright>
 		<PackageProjectUrl>https://github.com/yllibed/TenantCloudClient</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/yllibed/TenantCloudClient</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
