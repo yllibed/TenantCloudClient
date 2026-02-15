@@ -1,178 +1,157 @@
-﻿using System;
+using System.Globalization;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
-using Yllibed.TenantCloudClient.HttpMessages;
+using System.Text.Json.Serialization.Metadata;
 
-namespace Yllibed.TenantCloudClient
+namespace Yllibed.TenantCloudClient;
+
+public class TcClient : IDisposable, ITcClient
 {
-	public class TcClient : IDisposable, ITcClient
+	private readonly ITcAuthTokenProvider _tokenProvider;
+	private readonly HttpClient _httpClient;
+
+	public TcClient(ITcAuthTokenProvider tokenProvider)
 	{
-		private readonly ITcContext _context;
-		private readonly HttpClient _httpClient;
+		_tokenProvider = tokenProvider;
 
-		private static readonly Encoding _encoding = new UTF8Encoding(false);
+		Contacts = new PaginatedSource<TcContact>(
+			(ct, page, extra) => GetJsonApiPage(ct, "contacts", page, extra,
+				TcJsonSerializerContext.Default.TcJsonApiResponseTcContact), "");
 
-		public TcClient(ITcContext context)
+		Properties = new PaginatedSource<TcProperty>(
+			(ct, page, extra) => GetJsonApiPage(ct, "properties", page, extra,
+				TcJsonSerializerContext.Default.TcJsonApiResponseTcProperty), "");
+
+		Units = new PaginatedSource<TcUnit>(
+			(ct, page, extra) => GetJsonApiPage(ct, "units", page, extra,
+				TcJsonSerializerContext.Default.TcJsonApiResponseTcUnit), "");
+
+		Transactions = new PaginatedSource<TcTransaction>(
+			(ct, page, extra) => GetJsonApiPage(ct, "transactions", page, extra,
+				TcJsonSerializerContext.Default.TcJsonApiResponseTcTransaction), "");
+
+		Leases = new PaginatedSource<TcLease>(
+			(ct, page, extra) => GetJsonApiPage(ct, "leases", page, extra,
+				TcJsonSerializerContext.Default.TcJsonApiResponseTcLease), "");
+
+		var httpHandler = new HttpClientHandler()
 		{
-			_context = context;
+			UseCookies = false,
+			UseDefaultCredentials = false,
+			AllowAutoRedirect = true,
+			AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
+		};
 
-			Tenants = new PaginatedSource<TcTenantDetails>(GetTenantPage, "");
+		_httpClient = new HttpClient(httpHandler, true)
+		{
+			BaseAddress = new Uri("https://api.tenantcloud.com/"),
+		};
 
-			Properties = new PaginatedSource<TcProperty>(GetPropertyPage, "");
+		_httpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("Yllibed.TenantCloudClient", "0.1"));
+		_httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+		_httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/json"));
+		_httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/plain"));
+		_httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/*"));
+	}
 
-			Units = new PaginatedSource<TcUnit>(GetUnitsPage, "");
+	public async Task<TcUserInfo?> GetUserInfo(CancellationToken ct)
+	{
+		var result = await HttpGet(ct, "auth/user", TcJsonSerializerContext.Default.TcUserInfoResponse).ConfigureAwait(false);
+		return result?.User;
+	}
 
-			Transactions = new PaginatedSource<TcTransaction>(GetTransactionsPage, "");
+	public IPaginatedSource<TcContact> Contacts { get; }
 
-			var httpHandler = new HttpClientHandler()
+	public IPaginatedSource<TcProperty> Properties { get; }
+
+	public IPaginatedSource<TcUnit> Units { get; }
+
+	public IPaginatedSource<TcTransaction> Transactions { get; }
+
+	public IPaginatedSource<TcLease> Leases { get; }
+
+	private async Task<(ReadOnlyMemory<T>, long, long)> GetJsonApiPage<T>(
+		CancellationToken ct, string endpoint, long pageNo, string extraUrl,
+		JsonTypeInfo<TcJsonApiResponse<T>> typeInfo)
+		where T : class, IHasId
+	{
+		var url = endpoint + "?page=" + pageNo.ToString(CultureInfo.InvariantCulture) + extraUrl;
+		var response = await HttpGet(ct, url, typeInfo).ConfigureAwait(false);
+
+		var entries = response.Data?
+			.Select(item =>
 			{
-				UseCookies = false,
-				UseDefaultCredentials = false,
-				AllowAutoRedirect = true,
-				AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
-			};
-
-			_httpClient = new HttpClient(httpHandler, true)
-			{
-				BaseAddress = new Uri("https://home.tenantcloud.com/")
-			};
-
-			_httpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("Yllibed.TenantCloudClient", "0.1"));
-			_httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-			_httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/json"));
-			_httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/plain"));
-			_httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/*"));
-		}
-
-		public async Task<TcUserInfo?> GetUserInfo(CancellationToken ct)
-		{
-			var result = await HttpGet<TcUserInfoResponse>(ct, "v1/auth/user");
-			return result?.User;
-		}
-
-
-		public IPaginatedSource<TcTenantDetails> Tenants { get; }
-
-		private async Task<(ReadOnlyMemory<TcTenantDetails>, long, long)> GetTenantPage(CancellationToken ct, long pageNo, string extraUrl)
-		{
-			var response = await HttpGet<TcListResponse<TcTenantDetails>>(ct, "v1/landlord/tenants?page=" + pageNo + extraUrl);
-			var memory = new Memory<TcTenantDetails>(response.Entries);
-			return (memory, pageNo, response?.Pagination?.Total ?? 0);
-		}
-
-		public IPaginatedSource<TcProperty> Properties { get; }
-
-		private async Task<(ReadOnlyMemory<TcProperty>, long, long)> GetPropertyPage(CancellationToken ct, long pageNo, string extraUrl)
-		{
-			var response = await HttpGet<TcPagingListResponse<TcProperty>>(ct, "v2/property?fields[property]=name,property_status,address1,cityAddress&page=" + pageNo + extraUrl);
-			var memory = new Memory<TcProperty>(response.Entries);
-			return (memory, pageNo, response?.Meta?.Pagination?.Total ?? 0);
-		}
-
-		public IPaginatedSource<TcUnit> Units { get; }
-
-		private async Task<(ReadOnlyMemory<TcUnit>, long, long)> GetUnitsPage(CancellationToken ct, long pageNo, string extraUrl)
-		{
-			var response = await HttpGet<TcListResponse<TcUnit>>(ct, "v1/landlord/units?page=" + pageNo + extraUrl);
-			var memory = new Memory<TcUnit>(response.Entries);
-			return (memory, pageNo, response?.Pagination?.Total ?? 0);
-		}
-
-		public IPaginatedSource<TcTransaction> Transactions { get; }
-
-		private async Task<(ReadOnlyMemory<TcTransaction>, long, long)> GetTransactionsPage(CancellationToken ct, long pageNo, string extraUrl)
-		{
-			var response = await HttpGet<TcListResponse<TcTransaction>>(ct, "v1/landlord/transactions?page=" + pageNo + extraUrl);
-			var memory = new Memory<TcTransaction>(response.Entries);
-			return (memory, pageNo, response?.Pagination?.Total ?? 0);
-		}
-
-		private static readonly JsonSerializerOptions _jsonOptions =
-			new JsonSerializerOptions
-			{
-				AllowTrailingCommas = true,
-				PropertyNameCaseInsensitive = true
-			};
-
-		private async Task<T> HttpGet<T>(CancellationToken ct, string uri)
-		{
-			var req = new HttpRequestMessage(HttpMethod.Get, uri);
-			using var response = await HttpSend(ct, req);
-			await using var stream = await response.Content.ReadAsStreamAsync();
-
-			if (response.IsSuccessStatusCode)
-			{
-				var payload = await JsonSerializer.DeserializeAsync<T>(stream, _jsonOptions, ct);
-				return payload;
-			}
-			else
-			{
-				var errorPayload = await JsonSerializer.DeserializeAsync<TcErrorResponse>(stream, _jsonOptions, ct);
-				throw new TcClientException(response.StatusCode, errorPayload?.Message ?? "Http error");
-
-			}
-		}
-
-		private async Task<HttpResponseMessage> HttpSend(CancellationToken ct, HttpRequestMessage request)
-		{
-			var token = await _context.GetAuthToken(ct);
-
-			if (!string.IsNullOrEmpty(token))
-			{
-				request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-				var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
-
-				if (response.StatusCode != HttpStatusCode.Unauthorized)
+				var attr = item.Attributes;
+				if (attr is not null)
 				{
-					return response;
+					attr.Id = item.Id;
 				}
 
-				request.Headers.Authorization = null;
-			}
+				return attr!;
+			})
+			.Where(a => a is not null)
+			.ToArray() ?? Array.Empty<T>();
 
-			var loginRequest = new TcLoginRequest(await _context.GetCredentials(ct));
-			var loginRequestMsg = new HttpRequestMessage(HttpMethod.Post, "v1/auth/login")
-			{
-				Content = GetJsonContent(loginRequest)
-			};
+		return (entries.AsMemory(), pageNo, response.Meta?.Pagination?.Total ?? 0);
+	}
 
-			var loginResponse = await _httpClient.SendAsync(loginRequestMsg, HttpCompletionOption.ResponseHeadersRead, ct);
+	private async Task<T> HttpGet<T>(CancellationToken ct, string uri, JsonTypeInfo<T> typeInfo)
+	{
+		var req = new HttpRequestMessage(HttpMethod.Get, uri);
+		using var response = await HttpSend(ct, req).ConfigureAwait(false);
+		var stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
+		await using var _ = stream.ConfigureAwait(false);
 
-			if (!loginResponse.IsSuccessStatusCode)
-			{
-				throw new TcClientException(loginResponse.StatusCode, "Unable to login");
-			}
-
-			await using var loginResponseStream = await loginResponse.Content.ReadAsStreamAsync();
-			var loginResponsePayload = await JsonSerializer.DeserializeAsync<TcLoginResponse?>(loginResponseStream, _jsonOptions, ct);
-
-			if ((token = loginResponsePayload?.AccessToken) == null)
-			{
-				throw new TcClientException(loginResponse.StatusCode, "Invalid login response");
-			}
-			else
-			{
-				await _context.SetAuthToken(ct, token);
-
-				request.Headers.Authorization = new AuthenticationHeaderValue(loginResponsePayload?.TokenType ?? "Bearer", token);
-				return await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
-			}
-		}
-
-		private static HttpContent GetJsonContent(object entity)
+		if (response.IsSuccessStatusCode)
 		{
-			var payload = JsonSerializer.Serialize(entity);
-			return new StringContent(payload, _encoding, "application/json");
+			var payload = await JsonSerializer.DeserializeAsync(stream, typeInfo, ct).ConfigureAwait(false);
+			return payload ?? throw new TcClientException(response.StatusCode, "Null response payload");
+		}
+		else
+		{
+			var errorPayload = await JsonSerializer.DeserializeAsync(stream, TcJsonSerializerContext.Default.TcErrorResponse, ct).ConfigureAwait(false);
+			throw new TcClientException(response.StatusCode, errorPayload?.Message ?? "Http error");
+		}
+	}
+
+	private async Task<HttpResponseMessage> HttpSend(CancellationToken ct, HttpRequestMessage request)
+	{
+		var token = await _tokenProvider.GetToken(ct).ConfigureAwait(false);
+
+		if (string.IsNullOrEmpty(token))
+		{
+			throw new TcClientException(HttpStatusCode.Unauthorized, "No auth token available");
 		}
 
-		public void Dispose()
+		request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+		var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
+
+		if (response.StatusCode != HttpStatusCode.Unauthorized)
 		{
-			_httpClient.Dispose();
+			return response;
 		}
+
+		// Token was rejected — notify provider and try once more
+		response.Dispose();
+		await _tokenProvider.OnTokenRejected(ct, token).ConfigureAwait(false);
+
+		var newToken = await _tokenProvider.GetToken(ct).ConfigureAwait(false);
+
+		if (string.IsNullOrEmpty(newToken) || string.Equals(newToken, token, StringComparison.Ordinal))
+		{
+			throw new TcClientException(HttpStatusCode.Unauthorized, "Auth token rejected and no new token available");
+		}
+
+		// HttpRequestMessage cannot be reused after SendAsync, so create a new one
+		var retryRequest = new HttpRequestMessage(request.Method, request.RequestUri);
+		retryRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", newToken);
+
+		return await _httpClient.SendAsync(retryRequest, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
+	}
+
+	public void Dispose()
+	{
+		_httpClient.Dispose();
 	}
 }

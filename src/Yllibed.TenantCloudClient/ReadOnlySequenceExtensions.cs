@@ -1,23 +1,20 @@
-﻿using System;
 using System.Buffers;
-using System.Collections.Generic;
 
-namespace Yllibed.TenantCloudClient
+namespace Yllibed.TenantCloudClient;
+
+public static class ReadOnlySequenceExtensions
 {
-	public static class ReadOnlySequenceExtensions
+	public static IEnumerable<T> AsEnumerable<T>(this ReadOnlySequence<T> source)
 	{
-		public static IEnumerable<T> AsEnumerable<T>(this ReadOnlySequence<T> source)
+		var enumerator = source.GetEnumerator();
+
+		while (enumerator.MoveNext())
 		{
-			var enumerator = source.GetEnumerator();
+			var items = enumerator.Current.ToArray();
 
-			while (enumerator.MoveNext())
+			foreach (var item in items)
 			{
-				var items = enumerator.Current.ToArray();
-
-				foreach (var item in items)
-				{
-					yield return item;
-				}
+				yield return item;
 			}
 		}
 	}

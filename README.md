@@ -1,145 +1,208 @@
-# Yllibed's TenantCloud API Client Library
-This is an unofficial _dotnet_ API client library to connect to [TenantCloud](https://tenantcloud.com),
-a cheap / free online Rental Accounting and Management system.
+# Yllibed.TenantCloudClient
+
+Unofficial .NET client library for [TenantCloud](https://tenantcloud.com), a rental property management platform.
 
 [![Build Status](https://dev.azure.com/yllibed/TenantCloudClient/_apis/build/status/yllibed.TenantCloudClient?branchName=master)](https://dev.azure.com/yllibed/TenantCloudClient/_build/latest?definitionId=1&branchName=master) [![Nuget](https://img.shields.io/nuget/dt/Yllibed.TenantCloudClient.svg?label=nuget.org)](https://www.nuget.org/packages/Yllibed.TenantCloudClient)
 
-> Note: the goal of this API right now is to query the TenantCloud system.  There's no way to make updates to data yet.
+> **This is not an official TenantCloud product.** TenantCloud does not provide a public API; this library works against their internal endpoints.
 
-## Quickstart
+## Packages
 
-1. Add a reference to the [`Yllibed.TenantCloudClient`](https://www.nuget.org/packages/Yllibed.TenantCloudClient/) nuget package in the project
-2. Create a TenantCloud context:
-   ``` csharp
-       var tcContext = new InMemoryTcContext("username@domain.tld", "password");
-   ```
-3. Make a call:
-   ``` csharp
-   public async RefreshTenants(CancellationToken ct, TenantCloudContext tcContext)
-   {
-       var client = new TcClient(tcContext);
-       var activeTenants = await client.Tenants.GetAll(ct);
-   
-       // do something funny with activeTenants here...
-   }
-   ```
+| Package | Description |
+|---------|-------------|
+| [`Yllibed.TenantCloudClient`](https://www.nuget.org/packages/Yllibed.TenantCloudClient/) | Core library: API client, token store abstractions, and OS-native secure storage |
+| [`Yllibed.TenantCloudClient.Cdp`](https://www.nuget.org/packages/Yllibed.TenantCloudClient.Cdp/) | Chrome DevTools Protocol token provider (extracts tokens from a running browser) |
 
-## Features
+Both packages target **net8.0** and **net10.0** with no external runtime dependencies beyond `System.Text.Json` and `Microsoft.Extensions.DependencyInjection.Abstractions`.
 
-* Coded using `DOTNETSTANDARD2.1`, it means it works on:
-  * Dotnet Core 3.0+
-  * Xamarin (iOS 12.16+ & Android 10+)
-  * Most other _Mono_ 6.4+ environment, except _WebAssembly_ like _Blazor_ or [Uno.BootStrapper](https://github.com/nventive/Uno.Wasm.Bootstrap) because they need a custom http handler - open
-  an issue if you need support for those.
-* Will automatically renew the authentication token.
-* Absolutely no external dependency (except `System.Text.Json` but it's now part of the framework)
-* No enforced patterns: your code is responsible for the token persistence and the security of credentials.
-* Compatible with most/all IoC containers.
+## Quick start
 
-## API Details
+### With dependency injection
 
-### `ITcClient`:
-
-Implemented by the class `Yllibed.TenantCloudClient.TcClient`.
-
-| Member                    | Type                                | Usage                                                        |
-| ------------------------- | ----------------------------------- | ------------------------------------------------------------ |
-| `GetUserInfo` (method)    | `Task<TcUserInfo?>`                 | Get information about the current signed-in user.            |
-| `Tenants` (property)      | `IPaginatedSource<TcTenantDetails>` | Get information about tenants                                |
-| `Properties` (property)   | `IPaginatedSource<TcProperty>`      | Get information about properties                             |
-| `Units` (property)        | `IPaginatedSource<TcUnit>`          | Get information about rented units                           |
-| `Transactions` (property) | `IPaginatedSource<TcTransaction>`   | Get transactions. Transactions are always in reversed chronologic order. |
-
-### `IPaginatedSource<T>`:
-
-This interface let you get the `T` items from the API. Results are actually fetched when the `.GetAll()` method is used.
-
-* It's possible to specify a `maxResults` to the `.GetAll()` method to limit the number of results. The TenantCloud API will be fetched using their pagination system until the `maxResults` is reached. This means the `.GetAll()` can return more items than speficied, since it won't slice the last page to the number of `maxResults`. Example:
-
-  ``` csharp
-  var results = await tcCLient.Transactions
-     .ForCategory(TcTransactionCategory.Expense)
-     .ForStatus(TcTransactionStatus.Overdue)
-     .GetAll(ct, maxResults: 20);
-  ```
-
-  
-
-* The `.GetAll()` method is returning the type `ReadOnlySequence<T>`, which is specialized in returning a list with multiple segments (one per fetched page). If you need to process the results using standard LINQ operators, there's a `.AsEnumerable()` extension method available for that. Example:
-
-  ``` csharp
-  var results = await tcClient.Tenants.OnlyNoLease().GetAll(ct);
-  var nameEmailsAndPhones = results // results is of type ReadOnlySequence<TcTenantDetails>
-      .AsEnumerable() // required to use LINQ operators
-      .Select(t=>(t.Name, t.ValidEmails, t.ValidPhones))
-      .ToArray();
-  ```
-
-### `Tenants` (of type `IPaginatedSource<TcTenantDetails>`)
-
-Will return all non-archived tenants.
-
-* `.OnlyMovedIn()` to filter to "moved in" tenants (with at lease one active lease)
-* `.OnlyArchived()` to get archived tenants (this one is not filtering the result, but will return archived instead)
-* `.OnlyNoLease()` to filter to tenants without active leases (not "moved in")
-
-## `Properties` (of type `IPaginatedSource<TcProperty>`)
-
-Will return all active (non-archived) properties.  No extension methods for this yet.
-
-## `Units` (of type `IPaginatedSource<TcUnit>`)
-
-Will return tenants. Following filters are possible:
-
-* `.OnlyOccuped()` to filter to units with at least one active lease
-* `.OnlyVacant()` to filter to vacant units
-* `.ForProperty(propertyId)` to filter for a specific property
-
-## `Transactions` (of type `IPaginatedSource<TcTransaction>`)
-
-Will return transactions in reversed chronological order. Following filters are possible:
-
-* `.ForTenant(tenantId)` to filter for a specific tenant
-* `.ForProperty(propertyId)` to filter for a specific property
-* `.ForUnit(unitId)` to filter for a specific unit
-* `.ForStatus(status)` to filter to a specific `TcTransactionStatus`. Possible values:
-  * `TcTransactionStatus.Due`
-  * `TcTransactionStatus.Paid`
-  * `TcTransactionStatus.Partial`
-  * `TcTransactionStatus.Pending`
-  * `TcTransactionStatus.Void`
-  * `TcTransactionStatus.WithBalance`
-  * `TcTransactionStatus.Overdue`
-  * `TcTransactionStatus.Waive`
-* `.ForCategory(category)` to filter to a specific `TcTransactionCategory`. Possible values:
-  * `TcTransactionCategory.Income`
-  * `TcTransactionCategory.Expense`
-  * `TcTransactionCategory.Refund`
-  * `TcTransactionCategory.Credits`
-  * `TcTransactionCategory.Liability`
-
-Example usages of `.Transactions`:
-
-``` csharp
-// Check if a tenant is having any overdue lease
-var isHavingOverdue = (await tcClient.Transactions
-	    .ForCategory(TcTransactionCategory.Income)
-	    .ForStatus(TcTransactionStatus.Overdue)
-	    .ForTenant(tenantId)
-	    .GetAll(ct, maxResults: 1))
-    .AsEnumerable()
-    .Any();
-
-// Get total balance of per property
-var balancePerProperty = (await tcClient.Transactions
-	    .ForCategory(TcTransactionCategory.Income)
-	    .ForStatus(TcTransactionStatus.WithBalance)
-	    .GetAll(ct))
-    .AsEnumerable()
-	.Where(t => t.PropertyId != null) // only property-specific income
-    .GroupBy(t => (long)t.PropertyId, t => t.Balance) // group them
-    .Select(g => (property: g.Key, balance: g.Sum())) // summarize
-    .ToArray(); // create final array
-
+```csharp
+services
+    .AddSecureTokenStore()      // ITcTokenStore → OS credential store
+    .AddCdpTokenProvider()      // ITcAuthTokenProvider → browser extraction + auto-refresh
+    .AddTenantCloudClient();    // ITcClient → TcClient
 ```
 
+Then inject `ITcClient` wherever you need it:
+
+```csharp
+public class MyService(ITcClient tc)
+{
+    public async Task<TcUserInfo?> WhoAmI(CancellationToken ct)
+        => await tc.GetUserInfo(ct);
+}
+```
+
+### Without dependency injection
+
+```csharp
+var tokenStore = new SecureTokenStore();
+var tokenProvider = new CdpTokenProvider(new CdpTokenProviderOptions
+{
+    TokenStore = tokenStore,
+    AllowInteractiveLogin = true,
+});
+
+using var client = new TcClient(tokenProvider);
+var user = await client.GetUserInfo(ct);
+```
+
+## Authentication
+
+`TcClient` requires an `ITcAuthTokenProvider` to supply Bearer tokens. The library does not store or manage credentials directly.
+
+```csharp
+public interface ITcAuthTokenProvider
+{
+    Task<string?> GetToken(CancellationToken ct);
+    Task OnTokenRejected(CancellationToken ct, string rejectedToken);
+}
+```
+
+### Built-in: `CdpTokenProvider`
+
+Provided by the **Yllibed.TenantCloudClient.Cdp** package. Extracts auth tokens from a running Chromium browser via the Chrome DevTools Protocol, with automatic JWT refresh.
+
+```csharp
+services.AddCdpTokenProvider(options =>
+{
+    options.DebugPort = 9222;               // CDP debug port (default)
+    options.AllowInteractiveLogin = true;   // launch a browser if no session found
+});
+```
+
+The provider follows a multi-step strategy:
+1. In-memory cache (if the JWT is still valid)
+2. Token store (load + refresh if expired)
+3. CDP extraction from an existing browser tab on `app.tenantcloud.com`
+4. Interactive login (if `AllowInteractiveLogin` is enabled) — launches a browser window and waits for the user to sign in
+
+### Custom provider
+
+Implement `ITcAuthTokenProvider` and register it before calling `AddTenantCloudClient()`:
+
+```csharp
+services.AddSingleton<ITcAuthTokenProvider, MyCustomTokenProvider>();
+services.AddTenantCloudClient();
+```
+
+## Token persistence
+
+`ITcTokenStore` allows tokens to survive across process restarts. Both the core library and the CDP provider can use it.
+
+```csharp
+public interface ITcTokenStore
+{
+    Task<TcTokenSet?> LoadAsync(CancellationToken ct);
+    Task SaveAsync(TcTokenSet tokens, CancellationToken ct);
+}
+```
+
+### Built-in stores
+
+| Store | Package | Description |
+|-------|---------|-------------|
+| `SecureTokenStore` | Core | OS-native credential storage: **DPAPI** (Windows), **Keychain** (macOS), **Secret Service** (Linux) |
+| `FileTokenStore` | Cdp | Plain JSON file with atomic writes (useful for headless/CI scenarios) |
+
+```csharp
+// OS-native secure storage (recommended)
+services.AddSecureTokenStore();
+
+// With custom options
+services.AddSecureTokenStore(options =>
+{
+    options.ServiceName = "MyApp";
+    options.AccountKey = "production";
+});
+
+// Or file-based (from the Cdp package, register manually)
+services.AddSingleton<ITcTokenStore>(new FileTokenStore("/path/to/tokens.json"));
+```
+
+### Custom store
+
+Implement `ITcTokenStore` to persist tokens wherever you need (database, Azure Key Vault, etc.):
+
+```csharp
+services.AddSingleton<ITcTokenStore, MyDatabaseTokenStore>();
+```
+
+## API reference
+
+### `ITcClient`
+
+| Member | Type | Description |
+|--------|------|-------------|
+| `GetUserInfo(ct)` | `Task<TcUserInfo?>` | Current signed-in user info |
+| `Contacts` | `IPaginatedSource<TcContact>` | Contacts (tenants, professionals) |
+| `Properties` | `IPaginatedSource<TcProperty>` | Properties |
+| `Units` | `IPaginatedSource<TcUnit>` | Rental units |
+| `Transactions` | `IPaginatedSource<TcTransaction>` | Financial transactions |
+| `Leases` | `IPaginatedSource<TcLease>` | Leases |
+
+### Paginated sources
+
+Each collection is an `IPaginatedSource<T>`. Call `.GetAll(ct)` to fetch all pages, or `.GetAll(ct, maxResults: n)` to cap the fetch:
+
+```csharp
+var contacts = await client.Contacts.OnlyMovedIn().GetAll(ct);
+```
+
+The result is a `ReadOnlySequence<T>` (one segment per API page). Use `.AsEnumerable()` to bridge to LINQ:
+
+```csharp
+var names = (await client.Contacts.GetAll(ct))
+    .AsEnumerable()
+    .Select(c => c.Name)
+    .ToArray();
+```
+
+### Filters
+
+Filters are chainable extension methods that narrow the API query before fetching.
+
+**Contacts**
+- `.OnlyTenants()` — tenant contacts only
+- `.OnlyMovedIn()` — tenants with active leases
+- `.OnlyProfessionals()` — professional contacts only
+- `.OnlyArchived()` — archived contacts
+
+**Leases**
+- `.OnlyActive()` — active leases
+- `.ForProperty(propertyId)` — filter by property
+- `.ForUnit(unitId)` — filter by unit
+
+**Units**
+- `.OnlyOccuped()` — units with active leases
+- `.OnlyVacant()` — vacant units
+- `.ForProperty(propertyId)` — filter by property
+
+**Transactions**
+- `.ForTenant(tenantId)` — filter by tenant
+- `.ForProperty(propertyId)` — filter by property
+- `.ForUnit(unitId)` — filter by unit
+- `.ForStatus(TcTransactionStatus)` — filter by status (`Due`, `Paid`, `Partial`, `Pending`, `Void`, `WithBalance`, `Overdue`, `Waive`)
+- `.ForCategory(TcTransactionCategory)` — filter by category (`Income`, `Expense`, `Refund`, `Credits`, `Liability`)
+- `.SortByDateDescending()` — reverse chronological order
+
+### Example: overdue income per property
+
+```csharp
+var balancePerProperty = (await client.Transactions
+        .ForCategory(TcTransactionCategory.Income)
+        .ForStatus(TcTransactionStatus.WithBalance)
+        .GetAll(ct))
+    .AsEnumerable()
+    .Where(t => t.PropertyId != null)
+    .GroupBy(t => (long)t.PropertyId!, t => t.Balance)
+    .Select(g => new { PropertyId = g.Key, Balance = g.Sum() })
+    .ToArray();
+```
+
+## License
+
+MIT

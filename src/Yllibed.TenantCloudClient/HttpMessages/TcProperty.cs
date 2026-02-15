@@ -1,19 +1,23 @@
-﻿using System;
-using System.Text.Json.Serialization;
+using System.Globalization;
 
-namespace Yllibed.TenantCloudClient.HttpMessages
+namespace Yllibed.TenantCloudClient.HttpMessages;
+
+public class TcProperty : IHasId
 {
-	public class TcProperty
-	{
-		[JsonPropertyName("id")]
-		[JsonConverter(typeof(JsonAutoLongConverter))]
-		public long Id { get; set; }
+	[JsonIgnore]
+	public long Id { get; set; }
 
-		public string? Name => Attributes?.Name;
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
 
-		public string Address => $"{Attributes?.Address1} {Attributes?.CityAddress}";
+	[JsonPropertyName("address1")]
+	public string? Address1 { get; set; }
 
-		[JsonPropertyName("attributes")]
-		public TcPropertyAttributes? Attributes { get; set; }
-	}
+	[JsonPropertyName("cityAddress")]
+	public string? CityAddress { get; set; }
+
+	[JsonPropertyName("property_status")]
+	public string? Status { get; set; }
+
+	public string Address => string.Format(CultureInfo.InvariantCulture, "{0} {1}", Address1, CityAddress);
 }

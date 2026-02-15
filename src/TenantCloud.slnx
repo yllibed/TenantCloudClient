@@ -1,0 +1,5 @@
+<Solution>
+	<Project Path="Yllibed.TenantCloudClient/Yllibed.TenantCloudClient.csproj" />
+	<Project Path="Yllibed.TenantCloudClient.Cdp/Yllibed.TenantCloudClient.Cdp.csproj" />
+	<Project Path="Yllibed.TenantCloudClient.Tests/Yllibed.TenantCloudClient.Tests.csproj" />
+</Solution>
