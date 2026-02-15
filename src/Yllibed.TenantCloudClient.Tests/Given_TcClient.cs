@@ -19,10 +19,10 @@ public class Given_TcClient : TestBase
 	}
 
 	[TestMethod]
-	public async Task When_GettingAllTenants()
+	public async Task When_GettingAllContacts()
 	{
 		var client = new TcClient(TokenProvider);
-		var sut = client.Tenants;
+		var sut = client.Contacts;
 
 		var all = await sut.GetAll(CancellationToken.None);
 
@@ -31,26 +31,14 @@ public class Given_TcClient : TestBase
 	}
 
 	[TestMethod]
-	public async Task When_GettingMovedInTenants()
+	public async Task When_GettingMovedInContacts()
 	{
 		var client = new TcClient(TokenProvider);
-		var sut = client.Tenants.OnlyMovedIn();
+		var sut = client.Contacts.OnlyMovedIn();
 
 		var all = await sut.GetAll(CancellationToken.None);
 
 		all.Length.Should().NotBe(0);
-		all.AsEnumerable().Select(x => x.Id).Should().OnlyHaveUniqueItems();
-	}
-
-	[TestMethod]
-	public async Task When_GettingMNoLeaseTenants()
-	{
-		var client = new TcClient(TokenProvider);
-		var sut = client.Tenants.OnlyNoLease();
-
-		var all = await sut.GetAll(CancellationToken.None);
-
-		// Won't check for zero on this one, since it's normal for it to be zero
 		all.AsEnumerable().Select(x => x.Id).Should().OnlyHaveUniqueItems();
 	}
 
@@ -82,11 +70,11 @@ public class Given_TcClient : TestBase
 	public async Task When_GetTransactionsForTenant()
 	{
 		var client = new TcClient(TokenProvider);
-		var firstTenantId = await GetFirstTenantId(client);
+		var firstContactId = await GetFirstContactId(client);
 
 		var sut = client.Transactions
 			.ForCategory(TcTransactionCategory.Income)
-			.ForTenant(firstTenantId);
+			.ForTenant(firstContactId);
 		var all = await sut.GetAll(CancellationToken.None);
 
 		all.Length.Should().NotBe(0);
@@ -139,15 +127,59 @@ public class Given_TcClient : TestBase
 		all.AsEnumerable().Select(x => x.propertyId).Should().OnlyHaveUniqueItems();
 	}
 
-	private static async Task<long> GetFirstTenantId(TcClient client)
+	[TestMethod]
+	public async Task When_GetLeases()
 	{
-		var tenants = await client.Tenants.OnlyMovedIn().GetAll(CancellationToken.None, 1).ConfigureAwait(false);
-		return tenants.AsEnumerable().First().Id;
+		var client = new TcClient(TokenProvider);
+		var sut = client.Leases;
+
+		var all = await sut.GetAll(CancellationToken.None);
+
+		all.Length.Should().NotBe(0);
+		all.AsEnumerable().Select(x => x.Id).Should().OnlyHaveUniqueItems();
+	}
+
+	[TestMethod]
+	public async Task When_GetActiveLeases()
+	{
+		var client = new TcClient(TokenProvider);
+		var sut = client.Leases.OnlyActive();
+
+		var all = await sut.GetAll(CancellationToken.None);
+
+		all.Length.Should().NotBe(0);
+		all.AsEnumerable().Select(x => x.Id).Should().OnlyHaveUniqueItems();
+	}
+
+	[TestMethod]
+	public async Task When_GetLeasesForProperty()
+	{
+		var client = new TcClient(TokenProvider);
+		var firstPropertyId = await GetFirstPropertyId(client);
+
+		var sut = client.Leases.ForProperty(firstPropertyId);
+
+		var all = await sut.GetAll(CancellationToken.None);
+
+		// May be empty if no leases for that property, just verify unique IDs
+		all.AsEnumerable().Select(x => x.Id).Should().OnlyHaveUniqueItems();
+	}
+
+	private static async Task<long> GetFirstContactId(TcClient client)
+	{
+		var contacts = await client.Contacts.OnlyMovedIn().GetAll(CancellationToken.None, 1).ConfigureAwait(false);
+		return contacts.AsEnumerable().First().Id;
 	}
 
 	private static async Task<long> GetFirstUnitId(TcClient client)
 	{
 		var units = await client.Units.OnlyOccuped().GetAll(CancellationToken.None, 1).ConfigureAwait(false);
 		return units.AsEnumerable().First().Id;
+	}
+
+	private static async Task<long> GetFirstPropertyId(TcClient client)
+	{
+		var properties = await client.Properties.GetAll(CancellationToken.None, 1).ConfigureAwait(false);
+		return properties.AsEnumerable().First().Id;
 	}
 }
