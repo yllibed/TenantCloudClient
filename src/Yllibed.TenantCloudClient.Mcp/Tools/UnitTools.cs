@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Text.Json;
+using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 using Yllibed.TenantCloudClient.HttpMessages;
 
@@ -9,7 +10,7 @@ namespace Yllibed.TenantCloudClient.Mcp.Tools;
 internal sealed class UnitTools
 {
 	[McpServerTool(Name = "list_units"), Description("List rental units from TenantCloud. Can filter by property or occupancy status.")]
-	public static async Task<string> ListUnits(
+	public static async Task<CallToolResult> ListUnits(
 		ITcClient client,
 		[Description("Filter by property ID")] long? propertyId,
 		[Description("Filter by occupancy: occupied, vacant")] string? occupancy,
@@ -35,11 +36,11 @@ internal sealed class UnitTools
 
 			var data = await source.GetAll(ct, maxResults ?? 100).ConfigureAwait(false);
 			var result = new ListResult<TcUnit>(data.AsEnumerable().ToArray());
-			return JsonSerializer.Serialize(result, McpJsonContext.Default.ListResultTcUnit);
+			return ToolResults.Success(JsonSerializer.Serialize(result, McpJsonContext.Default.ListResultTcUnit));
 		}
 		catch (TcClientException ex)
 		{
-			return $"Error: {ex.Message} (HTTP {(int)ex.HttpStatus})";
+			return ToolResults.Error($"{ex.Message} (HTTP {(int)ex.HttpStatus})");
 		}
 	}
 }
