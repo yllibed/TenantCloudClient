@@ -75,7 +75,7 @@ internal static class InstallCommand
 		servers["tc-mcp"] = new JsonObject
 		{
 			["command"] = exePath,
-			["args"] = new JsonArray(),
+			["args"] = new JsonArray("mcp"),
 		};
 
 		var options = new JsonSerializerOptions { WriteIndented = true };
@@ -123,7 +123,7 @@ internal static class InstallCommand
 			var psi = new ProcessStartInfo
 			{
 				FileName = "claude",
-				ArgumentList = { "mcp", "add", "--transport", "stdio", "tc-mcp", "--", exePath },
+				ArgumentList = { "mcp", "add", "--transport", "stdio", "tc-mcp", "--", exePath, "mcp" },
 				UseShellExecute = false,
 				RedirectStandardOutput = true,
 				RedirectStandardError = true,
