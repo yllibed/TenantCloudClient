@@ -6,17 +6,17 @@
 
 Download the binary for your platform from [GitHub Releases](https://github.com/yllibed/TenantCloudClient/releases):
 
-| Platform | Binary |
-|----------|--------|
+| Platform | Asset |
+|----------|-------|
 | Windows x64 | `tc-mcp-win-x64.exe` |
 | Windows ARM64 | `tc-mcp-win-arm64.exe` |
 | macOS x64 | `tc-mcp-osx-x64` |
 | macOS ARM64 | `tc-mcp-osx-arm64` |
 | Linux x64 | `tc-mcp-linux-x64` |
 | Linux ARM64 | `tc-mcp-linux-arm64` |
-| Portable (.NET 10) | `tc-mcp-any` |
+| Portable (.NET 10) | `tc-mcp-any.zip` |
 
-Platform-specific binaries are self-contained (no .NET runtime required). The portable build requires the .NET 10 runtime installed on the machine.
+Platform-specific binaries are self-contained single-file executables (no .NET runtime required). The portable build is a zip containing `tc-mcp.dll` and its dependencies — run with `dotnet tc-mcp.dll mcp`.
 
 ## Auto-configuration
 
@@ -34,7 +34,7 @@ tc-mcp install claude-code
 - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
 - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 
-**Claude Code** — runs `claude mcp add --transport stdio tc-mcp -- <exePath>`
+**Claude Code** — runs `claude mcp add --transport stdio tc-mcp -- <exePath> mcp`
 
 ## Manual configuration
 
@@ -47,7 +47,7 @@ Add to your `claude_desktop_config.json`:
   "mcpServers": {
     "tc-mcp": {
       "command": "/path/to/tc-mcp",
-      "args": []
+      "args": ["mcp"]
     }
   }
 }
@@ -56,12 +56,12 @@ Add to your `claude_desktop_config.json`:
 ### Claude Code
 
 ```bash
-claude mcp add --transport stdio tc-mcp -- /path/to/tc-mcp
+claude mcp add --transport stdio tc-mcp -- /path/to/tc-mcp mcp
 ```
 
 ### Cursor / other MCP clients
 
-Use stdio transport with the `tc-mcp` binary path as the command.
+Use stdio transport with the `tc-mcp` binary path as the command and `mcp` as the first argument.
 
 ## Available tools
 
