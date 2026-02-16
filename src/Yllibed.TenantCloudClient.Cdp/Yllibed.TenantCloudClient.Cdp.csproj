@@ -27,7 +27,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<None Include="..\..\README.md" Pack="true" PackagePath="\" />
+		<None Include="..\..\docs\nuget-cdp.md" Pack="true" PackagePath="\README.md" />
 	</ItemGroup>
 
 	<ItemGroup>
