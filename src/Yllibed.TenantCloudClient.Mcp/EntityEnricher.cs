@@ -28,7 +28,7 @@ internal static class EntityEnricher
 		var references = new JsonObject();
 
 		await AddReferencesAsync(references, "properties", propertyIds, cache.GetPropertyNameAsync, ct).ConfigureAwait(false);
-		await AddReferencesAsync(references, "units", unitIds, cache.GetUnitNameAsync, ct).ConfigureAwait(false);
+		await AddReferencesAsync(references, "units", unitIds, ResolveUnitWithProperty(cache), ct).ConfigureAwait(false);
 
 		if (references.Count > 0)
 		{
@@ -52,6 +52,21 @@ internal static class EntityEnricher
 		}
 
 		return ids;
+	}
+
+	private static Func<long, CancellationToken, Task<string?>> ResolveUnitWithProperty(EntityCache cache)
+	{
+		return async (id, ct) =>
+		{
+			var unit = await cache.GetUnitAsync(id, ct).ConfigureAwait(false);
+			if (unit is null)
+			{
+				return null;
+			}
+
+			var propertyName = await cache.GetPropertyNameAsync(unit.PropertyId, ct).ConfigureAwait(false);
+			return propertyName is not null ? $"{unit.Name} ({propertyName})" : unit.Name;
+		};
 	}
 
 	private static async Task AddReferencesAsync(

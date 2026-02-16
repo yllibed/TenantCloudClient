@@ -87,6 +87,7 @@ static async Task<int> RunMcpServer(string[] args)
 		.WithTools<UnitTools>()
 		.WithTools<TransactionTools>()
 		.WithTools<LeaseTools>()
+		.WithResources<SchemaResource>()
 		.WithResources<EntityResources>();
 
 	await builder.Build().RunAsync().ConfigureAwait(false);

@@ -20,6 +20,7 @@ public class TcLease : IHasId
 	public long UnitId { get; set; }
 
 	[JsonPropertyName("lease_status")]
+	[JsonConverter(typeof(JsonTcLeaseStatusConverter))]
 	public TcLeaseStatus Status { get; set; }
 
 	[JsonIgnore]
