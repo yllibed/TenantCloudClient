@@ -130,11 +130,10 @@ jobs:
   publish-binaries:
     name: Publish Binaries
     needs: build-test-pack
-    if: success() && github.event_name == 'push'
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        rid: [any, win-x64, win-arm64, osx-x64, osx-arm64, linux-x64, linux-arm64]
+        rid: ${{ github.event_name == 'push' && fromJson('["any","win-x64","win-arm64","osx-x64","osx-arm64","linux-x64","linux-arm64"]') || fromJson('["any","win-x64"]') }}
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
