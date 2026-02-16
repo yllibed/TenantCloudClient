@@ -12,6 +12,7 @@ internal sealed class LeaseTools
 	[McpServerTool(Name = "list_leases"), Description("List leases from TenantCloud. Can filter by property, unit, or status.")]
 	public static async Task<CallToolResult> ListLeases(
 		ITcClient client,
+		EntityCache cache,
 		[Description("Filter by property ID")] long? propertyId,
 		[Description("Filter by unit ID")] long? unitId,
 		[Description("Filter by status: active")] string? status,
@@ -39,7 +40,9 @@ internal sealed class LeaseTools
 
 			var data = await source.GetAll(ct, maxResults ?? 100).ConfigureAwait(false);
 			var result = new ListResult<TcLease>(data.AsEnumerable().ToArray());
-			return ToolResults.Success(JsonSerializer.Serialize(result, McpJsonContext.Default.ListResultTcLease));
+			var json = JsonSerializer.Serialize(result, McpJsonContext.Default.ListResultTcLease);
+			json = await EntityEnricher.EnrichAsync(json, cache, ct).ConfigureAwait(false);
+			return ToolResults.Success(json);
 		}
 		catch (TcClientException ex)
 		{

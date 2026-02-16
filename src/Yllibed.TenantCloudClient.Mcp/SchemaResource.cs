@@ -17,6 +17,33 @@ internal sealed class SchemaResource
 	private const string Schema = """
 		# TenantCloud Tool Usage Guide
 
+		## Output Presentation — CRITICAL
+
+		You MUST present **human-readable names** to the user, never raw numeric IDs.
+
+		Tool responses that contain foreign-key IDs (`property_id`, `unit_id`) automatically
+		include a `references` section at the end of the JSON with resolved names:
+
+		```json
+		{
+		  "data": [ ... ],
+		  "count": 5,
+		  "references": {
+		    "properties": { "6587": "742 Evergreen Terrace" },
+		    "units": { "11899": "Chambre 3" }
+		  }
+		}
+		```
+
+		Use the `references` table to replace IDs with names when presenting results to the user.
+		For detailed entity information, read the MCP resources:
+		- `tc://property/{id}` — full property details
+		- `tc://unit/{id}` — full unit details (includes parent property name)
+		- `tc://contact/{id}` — full contact details
+
+		When a reference is missing (entity not found in cache), resolve it by calling
+		the corresponding list tool (`list_properties`, `list_units`, `list_contacts`).
+
 		## Entities
 
 		### UserInfo

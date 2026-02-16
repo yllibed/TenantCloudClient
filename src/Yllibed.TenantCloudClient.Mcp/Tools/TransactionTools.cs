@@ -12,6 +12,7 @@ internal sealed class TransactionTools
 	[McpServerTool(Name = "list_transactions"), Description("List financial transactions from TenantCloud. Can filter by tenant, property, unit, status, or category.")]
 	public static async Task<CallToolResult> ListTransactions(
 		ITcClient client,
+		EntityCache cache,
 		[Description("Filter by tenant/contact ID")] long? tenantId,
 		[Description("Filter by property ID")] long? propertyId,
 		[Description("Filter by unit ID")] long? unitId,
@@ -51,7 +52,9 @@ internal sealed class TransactionTools
 
 			var data = await source.GetAll(ct, maxResults ?? 100).ConfigureAwait(false);
 			var result = new ListResult<TcTransaction>(data.AsEnumerable().ToArray());
-			return ToolResults.Success(JsonSerializer.Serialize(result, McpJsonContext.Default.ListResultTcTransaction));
+			var json = JsonSerializer.Serialize(result, McpJsonContext.Default.ListResultTcTransaction);
+			json = await EntityEnricher.EnrichAsync(json, cache, ct).ConfigureAwait(false);
+			return ToolResults.Success(json);
 		}
 		catch (TcClientException ex)
 		{

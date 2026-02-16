@@ -69,6 +69,7 @@ static async Task<int> RunMcpServer(string[] args)
 		}));
 
 	builder.Services.AddTenantCloudClient();
+	builder.Services.AddSingleton<EntityCache>();
 
 	builder.Services
 		.AddMcpServer(o =>
@@ -85,7 +86,8 @@ static async Task<int> RunMcpServer(string[] args)
 		.WithTools<PropertyTools>()
 		.WithTools<UnitTools>()
 		.WithTools<TransactionTools>()
-		.WithTools<LeaseTools>();
+		.WithTools<LeaseTools>()
+		.WithResources<EntityResources>();
 
 	await builder.Build().RunAsync().ConfigureAwait(false);
 
