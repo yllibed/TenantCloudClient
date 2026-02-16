@@ -19,6 +19,16 @@ if (string.Equals(command, "mcp", StringComparison.OrdinalIgnoreCase))
 	return await RunMcpServer(args[1..]).ConfigureAwait(false);
 }
 
+if (string.Equals(command, "login", StringComparison.OrdinalIgnoreCase))
+{
+	return await AuthCommands.LoginAsync().ConfigureAwait(false);
+}
+
+if (string.Equals(command, "logout", StringComparison.OrdinalIgnoreCase))
+{
+	return await AuthCommands.LogoutAsync().ConfigureAwait(false);
+}
+
 // No command or unknown command — show help
 PrintHelp();
 return command is null ? 0 : 1;
@@ -32,6 +42,8 @@ static void PrintHelp()
 	Console.WriteLine();
 	Console.WriteLine("Commands:");
 	Console.WriteLine("  mcp                       Start the MCP server (stdio transport)");
+	Console.WriteLine("  login                     Authenticate and store tokens");
+	Console.WriteLine("  logout                    Remove stored tokens");
 	Console.WriteLine("  install claude-desktop     Register in Claude Desktop config");
 	Console.WriteLine("  install claude-code        Register in Claude Code via CLI");
 }

@@ -18,6 +18,22 @@ Download the binary for your platform from [GitHub Releases](https://github.com/
 
 Platform-specific binaries are self-contained single-file executables (no .NET runtime required). The portable build is a zip containing `tc-mcp.dll` and its dependencies — run with `dotnet tc-mcp.dll mcp`.
 
+## Authentication
+
+Before using the MCP server, authenticate with TenantCloud:
+
+```bash
+tc-mcp login
+```
+
+This opens a browser window for you to sign in. Tokens are stored in the OS secure credential store (DPAPI on Windows, Keychain on macOS, Secret Service on Linux).
+
+To remove stored credentials:
+
+```bash
+tc-mcp logout
+```
+
 ## Auto-configuration
 
 ```bash

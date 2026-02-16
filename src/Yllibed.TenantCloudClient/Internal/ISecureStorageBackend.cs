@@ -7,4 +7,5 @@ internal interface ISecureStorageBackend
 {
 	Task<byte[]?> LoadAsync(string serviceName, string accountKey, CancellationToken ct);
 	Task SaveAsync(string serviceName, string accountKey, byte[] data, CancellationToken ct);
+	Task DeleteAsync(string serviceName, string accountKey, CancellationToken ct);
 }

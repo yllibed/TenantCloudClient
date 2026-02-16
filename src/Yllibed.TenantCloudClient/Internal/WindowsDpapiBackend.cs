@@ -110,6 +110,17 @@ internal sealed class WindowsDpapiBackend : ISecureStorageBackend
 		return Task.CompletedTask;
 	}
 
+	public Task DeleteAsync(string serviceName, string accountKey, CancellationToken ct)
+	{
+		var filePath = GetFilePath(accountKey);
+		if (File.Exists(filePath))
+		{
+			File.Delete(filePath);
+		}
+
+		return Task.CompletedTask;
+	}
+
 	private static string GetFilePath(string accountKey)
 	{
 		var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);

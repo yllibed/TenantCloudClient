@@ -52,4 +52,14 @@ public sealed class FileTokenStore : ITcTokenStore
 			throw;
 		}
 	}
+
+	public Task DeleteAsync(CancellationToken ct)
+	{
+		if (File.Exists(_filePath))
+		{
+			File.Delete(_filePath);
+		}
+
+		return Task.CompletedTask;
+	}
 }
