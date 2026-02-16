@@ -16,6 +16,9 @@ public class TcLease : IHasId
 	[JsonPropertyName("rent_to")]
 	public DateTime? EndDate { get; set; }
 
+	[JsonPropertyName("move_out_date")]
+	public DateTime? MoveOutDate { get; set; }
+
 	[JsonPropertyName("unit_id")]
 	public long UnitId { get; set; }
 

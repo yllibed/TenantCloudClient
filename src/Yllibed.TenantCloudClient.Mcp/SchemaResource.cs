@@ -110,9 +110,20 @@ internal sealed class SchemaResource
 		- `tenantId` (long?) — Tenant contact ID (see `references.contacts`)
 		- `startDate` (DateTime) — Start date
 		- `endDate` (DateTime?) — End date (null = month-to-month)
+		- `moveOutDate` (DateTime?) — Actual move-out date (null if still active)
 		- `status` (TcLeaseStatus) — Active, Archived, Ended, Expired, Future, Pending, etc.
 
-		## Tool Filters
+		## Tool Filters — CRITICAL
+
+		You MUST use server-side filters whenever the user's question targets a specific
+		property, unit, tenant, or status. **NEVER fetch all data and filter client-side**
+		when a filter parameter exists for the criterion. Server-side filtering is faster,
+		returns less data, and avoids hitting pagination limits.
+
+		For example, if the user asks about a specific unit:
+		1. Resolve the unit ID (see ID Resolution below)
+		2. Pass `unitId` to `list_leases` and `list_transactions` — do NOT call these
+		   tools without filters and then search through the results yourself.
 
 		### list_contacts
 		- `role` (string?) — Filter by role: `tenant`, `professional`, `moved_in`, `archived`
@@ -170,12 +181,19 @@ internal sealed class SchemaResource
 		When the match is ambiguous, present the candidates and ask the user to clarify.
 
 		## Typical Questions
-		- "Who are my tenants?" → list_contacts with role=tenant
-		- "What properties do I have?" → list_properties
-		- "Which units are vacant?" → list_units with occupancy=vacant
-		- "What is the rent balance for property X?" → resolve property name → list_transactions with propertyId + status=with_balance
-		- "Show me active leases for [address]" → resolve property → list_leases with propertyId + status=active
-		- "Show transactions for [tenant name]" → resolve contact → list_transactions with tenantId
-		- "Who am I logged in as?" → get_user_info
+
+		Always resolve names to IDs first, then use the appropriate filters.
+
+		- "Who are my tenants?" → `list_contacts` with `role=tenant`
+		- "What properties do I have?" → `list_properties`
+		- "Which units are vacant?" → `list_units` with `occupancy=vacant`
+		- "Which units are vacant at [property]?" → resolve property → `list_units` with `propertyId` + `occupancy=vacant`
+		- "What is the rent balance for property X?" → resolve property → `list_transactions` with `propertyId` + `status=with_balance`
+		- "Show me active leases for [address]" → resolve property → `list_leases` with `propertyId` + `status=active`
+		- "Show transactions for [tenant name]" → resolve contact → `list_transactions` with `tenantId`
+		- "Show overdue rent for unit 3B at [property]" → resolve property → resolve unit → `list_transactions` with `unitId` + `status=overdue` + `category=income`
+		- "What leases are on unit [name]?" → resolve unit → `list_leases` with `unitId`
+		- "Show all expenses for [property]" → resolve property → `list_transactions` with `propertyId` + `category=expense`
+		- "Who am I logged in as?" → `get_user_info`
 		""";
 }
