@@ -9,8 +9,9 @@ Download the binary for your platform from [GitHub Releases](https://github.com/
 | Platform | Binary |
 |----------|--------|
 | Windows x64 | `tc-mcp-win-x64.exe` |
+| Windows ARM64 | `tc-mcp-win-arm64.exe` |
 | macOS x64 | `tc-mcp-osx-x64` |
-| macOS ARM | `tc-mcp-osx-arm64` |
+| macOS ARM64 | `tc-mcp-osx-arm64` |
 | Linux x64 | `tc-mcp-linux-x64` |
 
 The binary is self-contained (no .NET runtime required).
