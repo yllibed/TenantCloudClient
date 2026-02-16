@@ -4,7 +4,6 @@ namespace Yllibed.TenantCloudClient.HttpMessages;
 
 public partial class TcContact : IHasId
 {
-	[JsonIgnore]
 	public long Id { get; set; }
 
 	[JsonPropertyName("email")]
