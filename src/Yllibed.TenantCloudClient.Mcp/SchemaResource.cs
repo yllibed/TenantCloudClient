@@ -21,8 +21,9 @@ internal sealed class SchemaResource
 
 		You MUST present **human-readable names** to the user, never raw numeric IDs.
 
-		Tool responses that contain foreign-key IDs (`property_id`, `unit_id`) automatically
-		include a `references` section at the end of the JSON with resolved names:
+		Tool responses that contain foreign-key IDs (`property_id`, `unit_id`, `user_client_id`,
+		`user_payer_id`) automatically include a `references` section at the end of the JSON with
+		resolved names:
 
 		```json
 		{
@@ -30,7 +31,8 @@ internal sealed class SchemaResource
 		  "count": 5,
 		  "references": {
 		    "properties": { "6587": "742 Evergreen Terrace" },
-		    "units": { "11899": "Chambre 3" }
+		    "units": { "11899": "Chambre 3 (742 Evergreen Terrace)" },
+		    "contacts": { "3099201": "John Smith" }
 		  }
 		}
 		```
@@ -88,6 +90,7 @@ internal sealed class SchemaResource
 		- `id` (long) — Transaction ID
 		- `unitId` (long?) — Associated unit
 		- `propertyId` (long?) — Associated property
+		- `payerId` (long?) — Payer contact ID (see `references.contacts`)
 		- `detail` (string?) — Description
 		- `amount` (decimal) — Total amount
 		- `paid` (decimal) — Amount paid
@@ -104,6 +107,7 @@ internal sealed class SchemaResource
 		- `id` (long) — Lease ID
 		- `name` (string?) — Lease name
 		- `unitId` (long) — Associated unit
+		- `tenantId` (long?) — Tenant contact ID (see `references.contacts`)
 		- `startDate` (DateTime) — Start date
 		- `endDate` (DateTime?) — End date (null = month-to-month)
 		- `status` (TcLeaseStatus) — Active, Archived, Ended, Expired, Future, Pending, etc.

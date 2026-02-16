@@ -12,6 +12,10 @@ public class TcTransaction : IHasId
 	[JsonConverter(typeof(JsonAutoNullableLongConverter))]
 	public long? PropertyId { get; set; }
 
+	[JsonPropertyName("user_payer_id")]
+	[JsonConverter(typeof(JsonAutoNullableLongConverter))]
+	public long? PayerId { get; set; }
+
 	[JsonPropertyName("detail")]
 	public string? Detail { get; set; }
 

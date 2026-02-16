@@ -19,6 +19,10 @@ public class TcLease : IHasId
 	[JsonPropertyName("unit_id")]
 	public long UnitId { get; set; }
 
+	[JsonPropertyName("user_client_id")]
+	[JsonConverter(typeof(JsonAutoNullableLongConverter))]
+	public long? TenantId { get; set; }
+
 	[JsonPropertyName("lease_status")]
 	[JsonConverter(typeof(JsonTcLeaseStatusConverter))]
 	public TcLeaseStatus Status { get; set; }

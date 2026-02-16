@@ -24,11 +24,14 @@ internal static class EntityEnricher
 
 		var propertyIds = CollectIds(dataArray, "property_id");
 		var unitIds = CollectIds(dataArray, "unit_id");
+		var contactIds = CollectIds(dataArray, "user_client_id");
+		contactIds.UnionWith(CollectIds(dataArray, "user_payer_id"));
 
 		var references = new JsonObject();
 
 		await AddReferencesAsync(references, "properties", propertyIds, cache.GetPropertyNameAsync, ct).ConfigureAwait(false);
 		await AddReferencesAsync(references, "units", unitIds, ResolveUnitWithProperty(cache), ct).ConfigureAwait(false);
+		await AddReferencesAsync(references, "contacts", contactIds, cache.GetContactNameAsync, ct).ConfigureAwait(false);
 
 		if (references.Count > 0)
 		{
