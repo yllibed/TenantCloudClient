@@ -21,6 +21,7 @@
 		<PackageProjectUrl>https://github.com/yllibed/TenantCloudClient</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/yllibed/TenantCloudClient</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageTags>tenantcloud</PackageTags>
 	</PropertyGroup>
@@ -31,6 +32,10 @@
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="..\..\README.md" Pack="true" PackagePath="\" />
 	</ItemGroup>
 
 	<ItemGroup>
