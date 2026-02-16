@@ -216,12 +216,13 @@ jobs:
         shell: bash
         run: |
           mkdir -p release-assets
-          cp artifacts/packages/*.nupkg release-assets/ 2>/dev/null || true
+          assets="$PWD/release-assets"
+          cp artifacts/packages/*.nupkg "$assets/" 2>/dev/null || true
           for dir in artifacts/binaries/tc-mcp-*/; do
             rid=$(basename "$dir" | sed 's/tc-mcp-//')
             if [ "$rid" = "any" ]; then
               # Portable build: zip all non-debug files
-              (cd "$dir" && zip -j "../../release-assets/tc-mcp-any.zip" \
+              (cd "$dir" && zip -j "$assets/tc-mcp-any.zip" \
                 $(ls tc-mcp* | grep -v '\.pdb$' | grep -v '\.xml$'))
               continue
             fi
@@ -232,13 +233,13 @@ jobs:
                 continue
               fi
               if [ "$ext" = "$(basename "$f")" ]; then
-                cp "$f" "release-assets/tc-mcp-${rid}"
+                cp "$f" "$assets/tc-mcp-${rid}"
               else
-                cp "$f" "release-assets/tc-mcp-${rid}.${ext}"
+                cp "$f" "$assets/tc-mcp-${rid}.${ext}"
               fi
             done
           done
-          ls -la release-assets/
+          ls -la "$assets/"
 
       - name: Create GitHub Release
         env:
