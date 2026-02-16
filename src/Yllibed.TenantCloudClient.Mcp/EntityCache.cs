@@ -73,6 +73,20 @@ internal sealed class EntityCache(ITcClient client)
 			_properties = properties.AsEnumerable().ToDictionary(p => p.Id);
 			_units = units.AsEnumerable().ToDictionary(u => u.Id);
 			_contacts = contacts.AsEnumerable().ToDictionary(c => c.Id);
+
+			// Add the signed-in user to the contacts dictionary so that
+			// user_payer_id references can be resolved to a name.
+			var userInfo = await client.GetUserInfo(ct).ConfigureAwait(false);
+			if (userInfo is not null && !_contacts.ContainsKey(userInfo.Id))
+			{
+				_contacts[userInfo.Id] = new TcContact
+				{
+					Id = userInfo.Id,
+					FirstName = userInfo.FirstName,
+					LastName = userInfo.LastName,
+					Name = $"{userInfo.FirstName} {userInfo.LastName}".Trim(),
+				};
+			}
 			_loadedAt = DateTime.UtcNow;
 		}
 		finally
