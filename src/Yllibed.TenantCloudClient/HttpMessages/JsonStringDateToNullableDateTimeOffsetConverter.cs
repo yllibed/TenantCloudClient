@@ -4,14 +4,6 @@ namespace Yllibed.TenantCloudClient.HttpMessages;
 
 public class JsonStringDateToNullableDateTimeOffsetConverter : JsonConverter<DateTimeOffset?>
 {
-	private static readonly string[] Formats =
-	[
-		"M/d/yyyy",
-		"MM/dd/yyyy",
-		"MM/d/yyyy",
-		"M/dd/yyyy",
-	];
-
 	public override DateTimeOffset? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
 	{
 		var str = reader.GetString();
@@ -20,7 +12,7 @@ public class JsonStringDateToNullableDateTimeOffsetConverter : JsonConverter<Dat
 			return null;
 		}
 
-		if (DateTimeOffset.TryParseExact(str, Formats, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AssumeLocal | DateTimeStyles.AllowWhiteSpaces, out var dto))
+		if (DateFormats.TryParse(str, out var dto))
 		{
 			return dto;
 		}
