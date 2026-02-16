@@ -66,23 +66,17 @@ public static class TcTransactionsPaginatedSourceExtensions
 
 	internal static string ToSerializedString(this TcTransactionStatus status)
 	{
-		switch (status)
+		return status switch
 		{
-			case TcTransactionStatus.Due:
-			case TcTransactionStatus.Paid:
-			case TcTransactionStatus.Partial:
-			case TcTransactionStatus.Pending:
-			case TcTransactionStatus.Void:
-				var b = (byte)status;
-				return b.ToString(NumberFormatInfo.InvariantInfo);
-			case TcTransactionStatus.WithBalance:
-				return "with_balance";
-			case TcTransactionStatus.Overdue:
-				return "overdue";
-			case TcTransactionStatus.Waive:
-				return "waive";
-			default:
-				throw new ArgumentOutOfRangeException(nameof(status), status, "Unknown status");
-		}
+			TcTransactionStatus.Due => "due",
+			TcTransactionStatus.Paid => "paid",
+			TcTransactionStatus.Partial => "partial",
+			TcTransactionStatus.Pending => "pending",
+			TcTransactionStatus.Void => "void",
+			TcTransactionStatus.WithBalance => "with_balance",
+			TcTransactionStatus.Overdue => "overdue",
+			TcTransactionStatus.Waive => "waive",
+			_ => throw new ArgumentOutOfRangeException(nameof(status), status, "Unknown status"),
+		};
 	}
 }

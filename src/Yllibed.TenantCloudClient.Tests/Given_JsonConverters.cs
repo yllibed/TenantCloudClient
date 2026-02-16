@@ -85,6 +85,18 @@ public class Given_JsonConverters
 	}
 
 	[TestMethod]
+	public void DateConverter_ReadsIsoDateString()
+	{
+		var json = """{"id": 1, "date": "2026-02-01", "amount": 0, "paid": 0, "balance": 0}""";
+		var result = JsonSerializer.Deserialize<TcTransaction>(json, Options);
+
+		result.Should().NotBeNull();
+		result!.DueDate.Month.Should().Be(2);
+		result.DueDate.Day.Should().Be(1);
+		result.DueDate.Year.Should().Be(2026);
+	}
+
+	[TestMethod]
 	public void NullableDateConverter_ReadsNull()
 	{
 		var json = """{"id": 1, "paid_at": null, "date": "1/1/2024", "amount": 0, "paid": 0, "balance": 0}""";

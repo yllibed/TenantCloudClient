@@ -73,6 +73,21 @@ public sealed class SecureTokenStore : ITcTokenStore
 		}
 	}
 
+	/// <inheritdoc />
+	public async Task DeleteAsync(CancellationToken ct)
+	{
+		await _gate.WaitAsync(ct).ConfigureAwait(false);
+		try
+		{
+			await _backend.DeleteAsync(
+				_options.ServiceName, _options.AccountKey, ct).ConfigureAwait(false);
+		}
+		finally
+		{
+			_gate.Release();
+		}
+	}
+
 	private static ISecureStorageBackend CreateBackend()
 	{
 		if (OperatingSystem.IsWindows())

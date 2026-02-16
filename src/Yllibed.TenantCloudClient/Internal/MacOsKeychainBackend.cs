@@ -41,4 +41,13 @@ internal sealed class MacOsKeychainBackend : ISecureStorageBackend
 				$"security add-generic-password failed (exit code {exitCode}): {stderr.Trim()}");
 		}
 	}
+
+	public async Task DeleteAsync(string serviceName, string accountKey, CancellationToken ct)
+	{
+		await CliHelper.RunAsync(
+			"security",
+			$"delete-generic-password -s \"{serviceName}\" -a \"{accountKey}\"",
+			stdinData: null,
+			ct).ConfigureAwait(false);
+	}
 }

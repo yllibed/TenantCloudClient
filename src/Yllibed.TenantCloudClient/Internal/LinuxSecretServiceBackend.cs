@@ -41,4 +41,13 @@ internal sealed class LinuxSecretServiceBackend : ISecureStorageBackend
 				$"secret-tool store failed (exit code {exitCode}): {stderr.Trim()}");
 		}
 	}
+
+	public async Task DeleteAsync(string serviceName, string accountKey, CancellationToken ct)
+	{
+		await CliHelper.RunAsync(
+			"secret-tool",
+			$"clear service \"{serviceName}\" account \"{accountKey}\"",
+			stdinData: null,
+			ct).ConfigureAwait(false);
+	}
 }

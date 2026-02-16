@@ -23,6 +23,17 @@ public class JsonTcTransactionStatusConverter : JsonConverter<TcTransactionStatu
 
 	public override void Write(Utf8JsonWriter writer, TcTransactionStatus value, JsonSerializerOptions options)
 	{
-		writer.WriteNumberValue((byte)value);
+		writer.WriteStringValue(value switch
+		{
+			TcTransactionStatus.Due => "due",
+			TcTransactionStatus.Paid => "paid",
+			TcTransactionStatus.Partial => "partial",
+			TcTransactionStatus.Pending => "pending",
+			TcTransactionStatus.Void => "void",
+			TcTransactionStatus.WithBalance => "with_balance",
+			TcTransactionStatus.Overdue => "overdue",
+			TcTransactionStatus.Waive => "waive",
+			_ => value.ToString().ToLowerInvariant(),
+		});
 	}
 }

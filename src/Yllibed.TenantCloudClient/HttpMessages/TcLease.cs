@@ -2,7 +2,6 @@ namespace Yllibed.TenantCloudClient.HttpMessages;
 
 public class TcLease : IHasId
 {
-	[JsonIgnore]
 	public long Id { get; set; }
 
 	[JsonPropertyName("name")]
@@ -17,10 +16,18 @@ public class TcLease : IHasId
 	[JsonPropertyName("rent_to")]
 	public DateTime? EndDate { get; set; }
 
+	[JsonPropertyName("move_out_date")]
+	public DateTime? MoveOutDate { get; set; }
+
 	[JsonPropertyName("unit_id")]
 	public long UnitId { get; set; }
 
+	[JsonPropertyName("user_client_id")]
+	[JsonConverter(typeof(JsonAutoNullableLongConverter))]
+	public long? TenantId { get; set; }
+
 	[JsonPropertyName("lease_status")]
+	[JsonConverter(typeof(JsonTcLeaseStatusConverter))]
 	public TcLeaseStatus Status { get; set; }
 
 	[JsonIgnore]

@@ -12,6 +12,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Yllibed.TenantCloudClient\Yllibed.TenantCloudClient.csproj" />
+		<ProjectReference Include="..\Yllibed.TenantCloudClient.Cdp\Yllibed.TenantCloudClient.Cdp.csproj" />
 	</ItemGroup>
 
 </Project>

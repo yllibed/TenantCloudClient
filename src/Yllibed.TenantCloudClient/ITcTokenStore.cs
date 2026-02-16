@@ -7,4 +7,5 @@ public interface ITcTokenStore
 {
 	Task<TcTokenSet?> LoadAsync(CancellationToken ct);
 	Task SaveAsync(TcTokenSet tokens, CancellationToken ct);
+	Task DeleteAsync(CancellationToken ct);
 }
