@@ -8,15 +8,15 @@ Download the binary for your platform from [GitHub Releases](https://github.com/
 
 | Platform | Asset |
 |----------|-------|
-| Windows x64 | `tc-mcp-win-x64.exe` |
-| Windows ARM64 | `tc-mcp-win-arm64.exe` |
-| macOS x64 | `tc-mcp-osx-x64` |
-| macOS ARM64 | `tc-mcp-osx-arm64` |
-| Linux x64 | `tc-mcp-linux-x64` |
-| Linux ARM64 | `tc-mcp-linux-arm64` |
+| Windows x64 | `tc-mcp-win-x64.zip` |
+| Windows ARM64 | `tc-mcp-win-arm64.zip` |
+| macOS x64 | `tc-mcp-osx-x64.zip` |
+| macOS ARM64 | `tc-mcp-osx-arm64.zip` |
+| Linux x64 | `tc-mcp-linux-x64.zip` |
+| Linux ARM64 | `tc-mcp-linux-arm64.zip` |
 | Portable (.NET 10) | `tc-mcp-any.zip` |
 
-Platform-specific binaries are self-contained single-file executables (no .NET runtime required). The portable build is a zip containing `tc-mcp.dll` and its dependencies — run with `dotnet tc-mcp.dll mcp`.
+Each zip contains the executable (`tc-mcp.exe` on Windows, `tc-mcp` on macOS/Linux). Platform-specific builds are self-contained (no .NET runtime required). The portable build requires .NET 10 — run with `dotnet tc-mcp.dll mcp`.
 
 ## Authentication
 
