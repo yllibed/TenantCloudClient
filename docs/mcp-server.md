@@ -13,8 +13,10 @@ Download the binary for your platform from [GitHub Releases](https://github.com/
 | macOS x64 | `tc-mcp-osx-x64` |
 | macOS ARM64 | `tc-mcp-osx-arm64` |
 | Linux x64 | `tc-mcp-linux-x64` |
+| Linux ARM64 | `tc-mcp-linux-arm64` |
+| Portable (.NET 10) | `tc-mcp-any` |
 
-The binary is self-contained (no .NET runtime required).
+Platform-specific binaries are self-contained (no .NET runtime required). The portable build requires the .NET 10 runtime installed on the machine.
 
 ## Auto-configuration
 

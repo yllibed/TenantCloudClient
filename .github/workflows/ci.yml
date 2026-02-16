@@ -134,7 +134,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        rid: [win-x64, win-arm64, osx-x64, osx-arm64, linux-x64]
+        rid: [any, win-x64, win-arm64, osx-x64, osx-arm64, linux-x64, linux-arm64]
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -148,12 +148,25 @@ jobs:
           dotnet-quality: ga
 
       - name: Publish for ${{ matrix.rid }}
+        if: matrix.rid != 'any'
         run: >-
           dotnet publish
           src/Yllibed.TenantCloudClient.Mcp/Yllibed.TenantCloudClient.Mcp.csproj
           -c Release
           -r ${{ matrix.rid }}
           -o publish/${{ matrix.rid }}
+
+      - name: Publish portable
+        if: matrix.rid == 'any'
+        run: >-
+          dotnet publish
+          src/Yllibed.TenantCloudClient.Mcp/Yllibed.TenantCloudClient.Mcp.csproj
+          -c Release
+          -p:SelfContained=false
+          -p:PublishSingleFile=false
+          -p:PublishTrimmed=false
+          -p:PublishReadyToRun=false
+          -o publish/any
 
       - name: Upload binary
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
