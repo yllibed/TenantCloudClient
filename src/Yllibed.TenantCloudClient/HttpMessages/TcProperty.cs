@@ -16,6 +16,7 @@ public class TcProperty : IHasId
 	public string? CityAddress { get; set; }
 
 	[JsonPropertyName("property_status")]
+	[JsonConverter(typeof(JsonFlexibleStringConverter))]
 	public string? Status { get; set; }
 
 	public string Address => string.Format(CultureInfo.InvariantCulture, "{0} {1}", Address1, CityAddress);

@@ -11,7 +11,8 @@ public class TcUnit : IHasId
 
 	public string? Description { get; set; }
 
-	public decimal Price { get; set; }
+	[JsonConverter(typeof(JsonNullableDecimalConverter))]
+	public decimal? Price { get; set; }
 
 	[JsonPropertyName("is_rented")]
 	public bool IsRented { get; set; }
