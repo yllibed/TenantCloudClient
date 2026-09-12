@@ -33,9 +33,9 @@ internal static class TenantCloudPages
 					break;
 				}
 				var take = Math.Min(entries.Length - offset, request.PageSize - items.Count);
-				foreach (var entry in entries.Slice(offset, take).ToArray())
+				for (var index = offset; index < offset + take; index++)
 				{
-					items.Add(JsonSerializer.SerializeToNode(entry, typeInfo)!.AsObject());
+					items.Add(JsonSerializer.SerializeToNode(entries.Span[index], typeInfo)!.AsObject());
 				}
 				offset += take;
 				consumed += take;
