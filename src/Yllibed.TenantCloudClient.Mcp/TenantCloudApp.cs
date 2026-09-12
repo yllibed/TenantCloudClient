@@ -27,6 +27,14 @@ internal static class TenantCloudApp
 			services.AddSingleton<EntityCache>();
 			configure?.Invoke(services);
 		}).UseDefaultInteractive();
+		app.Options(options =>
+		{
+			var output = options.Output;
+			var formatter = new JsonHumanOutputTransformer(output.Transformers["human"]);
+			output.AddTransformer(formatter.Name, formatter);
+			output.DefaultFormat = formatter.Name;
+			output.BannerFormats.Add(formatter.Name);
+		});
 
 		app.MapModule<TenantCloudModule>();
 		app.MapModule<ManagementModule>();

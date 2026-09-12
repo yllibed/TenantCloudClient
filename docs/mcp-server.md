@@ -14,6 +14,12 @@ tc-mcp
 With no arguments, the interactive REPL supports contexts: enter `list`, then run
 `properties` or `transactions`. Enter `..` to return to the parent context.
 
+The default `json-human` format displays JSON fields as key/value records and
+supports interactive paging. Nested objects and arrays remain compact JSON.
+Use `--json` for machine-readable output; MCP output is unchanged. Explicit
+`--human` selects Repl's built-in renderer, which currently displays CLR metadata
+for JSON objects. Use the default or `--output:json-human` for readable JSON fields.
+
 ## Installation
 
 Download the binary for your platform from [GitHub Releases](https://github.com/yllibed/TenantCloudClient/releases):

@@ -113,6 +113,20 @@ public sealed class Given_TenantCloudRepl
 	}
 
 	[TestMethod]
+	public async Task When_UsingDefaultOutput_Then_JsonFieldsAreReadable()
+	{
+		await using var host = ReplTestHost.Create(() => TenantCloudApp.Create(s => s.AddSingleton<ITcClient>(new FakeClient())));
+		await using var session = await host.OpenSessionAsync();
+		var result = await session.RunCommandAsync("list properties --result:page-size=1 --no-logo");
+		result.ExitCode.Should().Be(0, result.OutputText);
+		result.OutputText.Should().Contain("Property 1").And.Contain("name").And.Contain("--result:cursor");
+		result.OutputText.Should().NotContain("Parent").And.NotContain("Root").And.NotContain("Options");
+		var user = await session.RunCommandAsync("get user info --no-logo");
+		user.ExitCode.Should().Be(0, user.OutputText);
+		user.OutputText.Should().Contain("id").And.NotContain("Parent");
+	}
+
+	[TestMethod]
 	public void When_BuildingMcpGraph_Then_OnlyDataToolsAreExposed()
 	{
 		var app = TenantCloudApp.Create(s => s.AddSingleton<ITcClient>(new FakeClient()));
