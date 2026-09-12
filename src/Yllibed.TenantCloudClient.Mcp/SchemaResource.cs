@@ -21,23 +21,16 @@ internal sealed class SchemaResource
 
 		You MUST present **human-readable names** to the user, never raw numeric IDs.
 
-		Tool responses that contain foreign-key IDs (`property_id`, `unit_id`, `user_client_id`,
-		`user_payer_id`) automatically include a `references` section at the end of the JSON with
-		resolved names:
+		List tools return a paged envelope with `items` and `pageInfo`.
+		Use `_replPageSize` to request a bounded page and pass `pageInfo.nextCursor`
+		back as `_replCursor` to continue with the same tool and filters. A null next
+		cursor means the end. Follow every page before calculating totals or claiming
+		that a list is complete. Results are not a snapshot: source changes may affect paging.
 
-		```json
-		{
-		  "data": [ ... ],
-		  "count": 5,
-		  "references": {
-		    "properties": { "6587": "742 Evergreen Terrace" },
-		    "units": { "11899": "Chambre 3 (742 Evergreen Terrace)" },
-		    "contacts": { "3099201": "John Smith" }
-		  }
-		}
-		```
+		Rows with foreign-key IDs include resolved names when available:
+		`property_name`, `unit_name`, `user_client_name`, and `user_payer_name`.
+		Prefer these names when presenting results.
 
-		Use the `references` table to replace IDs with names when presenting results to the user.
 		For detailed entity information, read the MCP resources:
 		- `tc://property/{id}` — full property details
 		- `tc://unit/{id}` — full unit details (includes parent property name)
@@ -90,7 +83,7 @@ internal sealed class SchemaResource
 		- `id` (long) — Transaction ID
 		- `unitId` (long?) — Associated unit
 		- `propertyId` (long?) — Associated property
-		- `payerId` (long?) — Payer contact ID (see `references.contacts`)
+		- `payerId` (long?) — Payer contact ID (use the resolved contact name when available)
 		- `detail` (string?) — Description
 		- `amount` (decimal) — Total amount
 		- `paid` (decimal) — Amount paid
@@ -107,7 +100,7 @@ internal sealed class SchemaResource
 		- `id` (long) — Lease ID
 		- `name` (string?) — Lease name
 		- `unitId` (long) — Associated unit
-		- `tenantId` (long?) — Tenant contact ID (see `references.contacts`)
+		- `tenantId` (long?) — Tenant contact ID (use the resolved contact name when available)
 		- `startDate` (DateTime) — Start date
 		- `endDate` (DateTime?) — End date (null = month-to-month)
 		- `moveOutDate` (DateTime?) — Actual move-out date (null if still active)
@@ -127,15 +120,13 @@ internal sealed class SchemaResource
 
 		### list_contacts
 		- `role` (string?) — Filter by role: `tenant`, `professional`, `moved_in`, `archived`
-		- `maxResults` (int?) — Max results to return (default 100)
 
 		### list_properties
-		- `maxResults` (int?) — Max results to return (default 100)
+		No business filters; use the common paging parameters.
 
 		### list_units
 		- `propertyId` (long?) — Filter by property ID
 		- `occupancy` (string?) — Filter by occupancy: `occupied`, `vacant`
-		- `maxResults` (int?) — Max results to return (default 100)
 
 		### list_transactions
 		- `tenantId` (long?) — Filter by tenant/contact ID
@@ -143,13 +134,11 @@ internal sealed class SchemaResource
 		- `unitId` (long?) — Filter by unit ID
 		- `status` (string?) — Filter by status: `due`, `paid`, `partial`, `pending`, `void`, `with_balance`, `overdue`, `waive`
 		- `category` (string?) — Filter by category: `income`, `expense`, `refund`, `credits`, `liability`
-		- `maxResults` (int?) — Max results to return (default 100)
 
 		### list_leases
 		- `propertyId` (long?) — Filter by property ID
 		- `unitId` (long?) — Filter by unit ID
 		- `status` (string?) — Filter by status: `active`
-		- `maxResults` (int?) — Max results to return (default 100)
 
 		## ID Resolution — IMPORTANT
 

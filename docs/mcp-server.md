@@ -1,6 +1,18 @@
 # MCP Server (`tc-mcp`)
 
-`tc-mcp` is a [Model Context Protocol](https://modelcontextprotocol.io) server that exposes TenantCloud data to AI agents like Claude Desktop, Claude Code, and Cursor.
+`tc-mcp` exposes TenantCloud data as a CLI, an interactive REPL, and a [Model Context Protocol](https://modelcontextprotocol.io) server, using Repl 0.11.
+
+## CLI and interactive use
+
+```bash
+tc-mcp list properties --json --result:page-size=20
+tc-mcp list transactions --status=with_balance --json --result:page-size=20
+tc-mcp list --help
+tc-mcp
+```
+
+With no arguments, the interactive REPL supports contexts: enter `list`, then run
+`properties` or `transactions`. Enter `..` to return to the parent context.
 
 ## Installation
 
@@ -16,7 +28,7 @@ Download the binary for your platform from [GitHub Releases](https://github.com/
 | Linux ARM64 | `tc-mcp-linux-arm64.zip` |
 | Portable (.NET 10) | `tc-mcp-any.zip` |
 
-Each zip contains the executable (`tc-mcp.exe` on Windows, `tc-mcp` on macOS/Linux). Platform-specific builds are self-contained (no .NET runtime required). The portable build requires .NET 10 — run with `dotnet tc-mcp.dll mcp`.
+Each zip contains the executable (`tc-mcp.exe` on Windows, `tc-mcp` on macOS/Linux). Platform-specific builds are self-contained (no .NET runtime required). The portable build requires .NET 10 — run with `dotnet tc-mcp.dll mcp serve`.
 
 ## Authentication
 
@@ -50,7 +62,7 @@ tc-mcp install claude-code
 - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
 - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 
-**Claude Code** — runs `claude mcp add --transport stdio tc-mcp -- <exePath> mcp`
+**Claude Code** — runs `claude mcp add --transport stdio tc-mcp -- <exePath> mcp serve`
 
 ## Manual configuration
 
@@ -63,7 +75,7 @@ Add to your `claude_desktop_config.json`:
   "mcpServers": {
     "tc-mcp": {
       "command": "/path/to/tc-mcp",
-      "args": ["mcp"]
+      "args": ["mcp", "serve"]
     }
   }
 }
@@ -72,29 +84,53 @@ Add to your `claude_desktop_config.json`:
 ### Claude Code
 
 ```bash
-claude mcp add --transport stdio tc-mcp -- /path/to/tc-mcp mcp
+claude mcp add --transport stdio tc-mcp -- /path/to/tc-mcp mcp serve
 ```
 
 ### Cursor / other MCP clients
 
-Use stdio transport with the `tc-mcp` binary path as the command and `mcp` as the first argument.
+Use stdio transport with the `tc-mcp` binary path as the command and `mcp serve` as arguments.
+The previous `tc-mcp mcp` invocation remains an alias.
 
 ## Available tools
 
 | Tool | Description | Filters |
 |------|-------------|---------|
 | `get_user_info` | Current signed-in user profile | — |
-| `list_contacts` | Tenants, professionals, etc. | `role`, `maxResults` |
-| `list_properties` | Rental properties | `maxResults` |
-| `list_units` | Rental units | `propertyId`, `occupancy`, `maxResults` |
-| `list_transactions` | Financial transactions | `tenantId`, `propertyId`, `unitId`, `status`, `category`, `maxResults` |
-| `list_leases` | Lease agreements | `propertyId`, `unitId`, `status`, `maxResults` |
+| `list_contacts` | Tenants, professionals, etc. | `role` |
+| `list_properties` | Rental properties | — |
+| `list_units` | Rental units | `propertyId`, `occupancy` |
+| `list_transactions` | Financial transactions | `tenantId`, `propertyId`, `unitId`, `status`, `category` |
+| `list_leases` | Lease agreements | `propertyId`, `unitId`, `status` |
+
+### Pagination and migration from the previous MCP contract
+
+List tools now return `items` and `pageInfo`, replacing `data` and `count`.
+Use `_replPageSize` instead of `maxResults`. Continue with `_replCursor` set to
+the previous response's `pageInfo.nextCursor`, keeping the same tool and filters.
+A null next cursor means the end. `pageInfo.totalCount` describes the filtered
+source total, not the number of rows in the current page.
+
+CLI equivalents are `--result:page-size` and `--result:cursor`. Interactive
+human output can load subsequent pages through Repl's pager. Fetching every row
+with `--result:all` is intentionally rejected; follow the cursor instead.
+
+Pages are fetched from TenantCloud on demand. Continuing inside an API page may
+fetch that page again; results are not a snapshot of changing TenantCloud data.
+The existing name-resolution cache may also load bounded lookup lists.
+
+Resolved names now appear beside foreign keys as `property_name`, `unit_name`,
+`user_client_name`, and `user_payer_name`, instead of a root `references` map.
+Missing names can be resolved through the entity resources or paginated list tools.
 
 ## Available resources
 
 | URI | Description |
 |-----|-------------|
 | `tc://guide` | Tool usage guide — entities, fields, filters, and how to resolve names to IDs |
+| `tc://property/{id}` | Property details |
+| `tc://unit/{id}` | Unit details, including the parent property name |
+| `tc://contact/{id}` | Contact details |
 
 ## Authentication
 

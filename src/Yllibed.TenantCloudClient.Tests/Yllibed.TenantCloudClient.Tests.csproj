@@ -8,11 +8,13 @@
 
 	<ItemGroup>
 		<PackageReference Include="AwesomeAssertions" />
+		<PackageReference Include="Repl.Testing" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\Yllibed.TenantCloudClient\Yllibed.TenantCloudClient.csproj" />
 		<ProjectReference Include="..\Yllibed.TenantCloudClient.Cdp\Yllibed.TenantCloudClient.Cdp.csproj" />
+		<ProjectReference Include="..\Yllibed.TenantCloudClient.Mcp\Yllibed.TenantCloudClient.Mcp.csproj" />
 	</ItemGroup>
 
 </Project>

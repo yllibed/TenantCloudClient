@@ -1,65 +1,48 @@
 using System.ComponentModel;
-using System.Text.Json;
-using ModelContextProtocol.Protocol;
-using ModelContextProtocol.Server;
+using System.Text.Json.Nodes;
+using Repl;
 using Yllibed.TenantCloudClient.HttpMessages;
 
 namespace Yllibed.TenantCloudClient.Mcp.Tools;
 
-[McpServerToolType]
-internal sealed class TransactionTools
+internal sealed class TransactionTools(ITcClient client, EntityCache cache)
 {
-	[McpServerTool(Name = "list_transactions"), Description("List financial transactions from TenantCloud. Can filter by tenant, property, unit, status, or category.")]
-	public static async Task<CallToolResult> ListTransactions(
-		ITcClient client,
-		EntityCache cache,
-		[Description("Filter by tenant/contact ID")] long? tenantId,
-		[Description("Filter by property ID")] long? propertyId,
-		[Description("Filter by unit ID")] long? unitId,
-		[Description("Filter by status: due, paid, partial, pending, void, with_balance, overdue, waive")] string? status,
-		[Description("Filter by category: income, expense, refund, credits, liability")] string? category,
-		[Description("Maximum number of results to return (default 100)")] int? maxResults,
-		CancellationToken ct)
+	public IReplPageSource<JsonObject> ListTransactions(
+		IReplPagingContext paging,
+		[Description("Filter by tenant/contact ID")] long? tenantId = null,
+		[Description("Filter by property ID")] long? propertyId = null,
+		[Description("Filter by unit ID")] long? unitId = null,
+		[Description("Filter by status: due, paid, partial, pending, void, with_balance, overdue, waive")] string? status = null,
+		[Description("Filter by category: income, expense, refund, credits, liability")] string? category = null)
 	{
-		try
+		var source = client.Transactions;
+
+		if (tenantId.HasValue)
 		{
-			var source = client.Transactions;
-
-			if (tenantId.HasValue)
-			{
-				source = source.ForTenant(tenantId.Value);
-			}
-
-			if (propertyId.HasValue)
-			{
-				source = source.ForProperty(propertyId.Value);
-			}
-
-			if (unitId.HasValue)
-			{
-				source = source.ForUnit(unitId.Value);
-			}
-
-			if (status is not null && TryParseTransactionStatus(status, out var parsedStatus))
-			{
-				source = source.ForStatus(parsedStatus);
-			}
-
-			if (category is not null && TryParseTransactionCategory(category, out var parsedCategory))
-			{
-				source = source.ForCategory(parsedCategory);
-			}
-
-			var data = await source.GetAll(ct, maxResults ?? 100).ConfigureAwait(false);
-			var result = new ListResult<TcTransaction>(data.AsEnumerable().ToArray());
-			var json = JsonSerializer.Serialize(result, McpJsonContext.Default.ListResultTcTransaction);
-			json = await EntityEnricher.EnrichAsync(json, cache, ct).ConfigureAwait(false);
-			return ToolResults.Success(json);
+			source = source.ForTenant(tenantId.Value);
 		}
-		catch (TcClientException ex)
+
+		if (propertyId.HasValue)
 		{
-			return ToolResults.Error($"{ex.Message} (HTTP {(int)ex.HttpStatus})");
+			source = source.ForProperty(propertyId.Value);
 		}
+
+		if (unitId.HasValue)
+		{
+			source = source.ForUnit(unitId.Value);
+		}
+
+		if (status is not null && TryParseTransactionStatus(status, out var parsedStatus))
+		{
+			source = source.ForStatus(parsedStatus);
+		}
+
+		if (category is not null && TryParseTransactionCategory(category, out var parsedCategory))
+		{
+			source = source.ForCategory(parsedCategory);
+		}
+
+		return TenantCloudPages.Create(source, paging, McpJsonContext.Default.TcTransaction, cache);
 	}
 
 	private static bool TryParseTransactionStatus(string value, out TcTransactionStatus result)
@@ -78,7 +61,7 @@ internal sealed class TransactionTools
 		};
 
 		return value.ToLowerInvariant() is "due" or "paid" or "partial" or "pending" or "void"
-			or "with_balance" or "overdue" or "waive";
+		or "with_balance" or "overdue" or "waive";
 	}
 
 	private static bool TryParseTransactionCategory(string value, out TcTransactionCategory result)
