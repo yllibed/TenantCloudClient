@@ -31,6 +31,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<InternalsVisibleTo Include="Yllibed.TenantCloudClient.Tests" />
 		<ProjectReference Include="..\Yllibed.TenantCloudClient\Yllibed.TenantCloudClient.csproj" />
 	</ItemGroup>
 
