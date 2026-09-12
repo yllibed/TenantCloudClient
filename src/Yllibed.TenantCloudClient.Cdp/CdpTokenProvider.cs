@@ -258,22 +258,31 @@ public sealed class CdpTokenProvider : ITcAuthTokenProvider, IDisposable
 
 	private async Task<TcTokenSet?> TryInteractiveLoginAsync(CancellationToken ct)
 	{
-		var browserPath = ResolveBrowserPath();
-		if (browserPath is null)
-		{
-			return null;
-		}
-
-		var tempProfile = Directory.CreateTempSubdirectory("tc-cdp-").FullName;
 		try
 		{
-			return await LaunchBrowserAndExtractTokensAsync(
-				browserPath, tempProfile, ct).ConfigureAwait(false);
+			ct.ThrowIfCancellationRequested();
+			var browserPath = ResolveBrowserPath();
+			if (browserPath is null)
+			{
+				return null;
+			}
+
+			var tempProfile = Directory.CreateTempSubdirectory("tc-cdp-").FullName;
+			try
+			{
+				return await LaunchBrowserAndExtractTokensAsync(
+					browserPath, tempProfile, ct).ConfigureAwait(false);
+			}
+			finally
+			{
+				KillBrowserProcess();
+				TryDeleteDirectory(tempProfile);
+			}
 		}
-		finally
+		catch (Exception) when (!ct.IsCancellationRequested)
 		{
-			KillBrowserProcess();
-			TryDeleteDirectory(tempProfile);
+			// Browser startup failures follow the provider's no-token contract.
+			return null;
 		}
 	}
 
