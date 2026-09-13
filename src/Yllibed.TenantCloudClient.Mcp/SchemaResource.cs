@@ -41,21 +41,26 @@ internal sealed class SchemaResource
 
 		## Entities
 
+		These are the exact JSON field names returned by list tools.
+
 		### UserInfo
 		Current signed-in user profile.
 		- `id` (long) — User ID
 		- `email` (string) — Email address
 		- `firstName`, `lastName` (string) — Name
+		- `subDomain` (string) — TenantCloud subdomain
 		- `company` (string) — Company name
 		- `phone` (string) — Phone number
 		- `address1`, `address2`, `city`, `state`, `zip` (string) — Address
+		- `isCompany` (bool), `fax`, `lang`, `isVip` (string) — Account metadata
 
 		### Contact
 		A tenant, professional, or other contact.
 		- `id` (long) — Contact ID
 		- `name`, `firstName`, `lastName` (string) — Name
-		- `email1`, `email2`, `email3` (string) — Up to 3 email addresses
-		- `phone1`, `phone2`, `phone3` (string) — Up to 3 phone numbers
+		- `email`, `email_2`, `email_3` (string) — Up to 3 email addresses
+		- `phone`, `phone_2`, `phone_3` (string) — Up to 3 phone numbers
+		- `validEmails`, `emails`, `validPhones`, `phones` — Normalized contact values
 		- `status` (TcTenantStatus) — Contact status
 
 		### Property
@@ -64,47 +69,51 @@ internal sealed class SchemaResource
 		- `name` (string) — Property name
 		- `address1` (string) — Street address
 		- `cityAddress` (string) — City and state
-		- `status` (string) — Property status
+		- `property_status` (string) — Property status
+		- `address` (string) — Combined address
 
 		### Unit
 		A rental unit within a property.
 		- `id` (long) — Unit ID
-		- `propertyId` (long) — Parent property ID
+		- `property_id` (long) — Parent property ID
 		- `name` (string) — Unit name
 		- `description` (string?) — Description
-			- `price` (decimal?) — Rent price; null means unknown, not zero
-		- `isRented` (bool) — Currently occupied
-		- `isPetAllowed` (bool) — Pets allowed
-		- `isFurnished` (bool) — Furnished
-		- `isUtilities` (bool) — Utilities included
+		- `price` (decimal?) — Rent price; missing or null means unknown, not zero
+		- `is_rented` (bool) — Currently occupied
+		- `pets_allowed` (bool) — Pets allowed
+		- `is_furnished` (bool) — Furnished
+		- `is_utilities` (bool) — Utilities included
 
 		### Transaction
 		A financial transaction (rent, expense, etc.).
 		- `id` (long) — Transaction ID
-		- `unitId` (long?) — Associated unit
-		- `propertyId` (long?) — Associated property
-		- `payerId` (long?) — Payer contact ID (use the resolved contact name when available)
+		- `unit_id` (long?) — Associated unit
+		- `property_id` (long?) — Associated property
+		- `user_payer_id` (long?) — Payer contact ID (use `user_payer_name` when available)
 		- `detail` (string?) — Description
 		- `amount` (decimal) — Total amount
 		- `paid` (decimal) — Amount paid
 		- `balance` (decimal) — Remaining balance
 		- `currency` (string) — Currency code
-		- `dueDate` (DateTimeOffset) — Due date
-		- `paidAt` (DateTimeOffset?) — Payment date
+		- `date` (DateTimeOffset) — Due date
+		- `paid_at` (DateTimeOffset?) — Payment date
+		- `created_at` (DateTimeOffset) — Creation date
 		- `category` (TcTransactionCategory) — Income, Expense, Refund, Credits, Liability
 		- `status` (TcTransactionStatus) — Due, Paid, Partial, Pending, Void, WithBalance, Overdue, Waive
-		- `isRecurring` (bool) — Recurring transaction
+		- `is_recurring` (bool) — Recurring transaction
 
 		### Lease
 		A lease agreement.
 		- `id` (long) — Lease ID
 		- `name` (string?) — Lease name
-		- `unitId` (long) — Associated unit
-		- `tenantId` (long?) — Tenant contact ID (use the resolved contact name when available)
-		- `startDate` (DateTime) — Start date
-		- `endDate` (DateTime?) — End date (null = month-to-month)
-		- `moveOutDate` (DateTime?) — Actual move-out date (null if still active)
-		- `status` (TcLeaseStatus) — Active, Archived, Ended, Expired, Future, Pending, etc.
+		- `unit_id` (long) — Associated unit
+		- `user_client_id` (long?) — Tenant contact ID (use `user_client_name` when available)
+		- `rent_from` (DateTime) — Start date
+		- `rent_to` (DateTime?) — End date (null = month-to-month)
+		- `move_out_date` (DateTime?) — Actual move-out date (null if still active)
+		- `created_at` (DateTimeOffset) — Creation date
+		- `lease_status` (TcLeaseStatus) — Active, Archived, Ended, Expired, Future, Pending, etc.
+		- `isArchived` (bool) — Whether the lease is archived
 
 		## Tool Filters — CRITICAL
 

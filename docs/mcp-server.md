@@ -48,7 +48,7 @@ Before using the MCP server, authenticate with TenantCloud:
 tc-mcp login
 ```
 
-This signs in using a Chromium browser and persists tokens using OS-backed storage. A usable stored session can be reused; otherwise a temporary browser opens for sign-in. Ordinary signed-in browser windows do not expose CDP automatically. See [browser and storage prerequisites](authentication.md#browser-prerequisites).
+This signs in using a Chromium browser and attempts to persist tokens using OS-backed storage. A usable stored session can be reused; otherwise a temporary browser opens for sign-in. If secure storage is unavailable, login can still succeed for the current process but another process will need to authenticate again. Ordinary signed-in browser windows do not expose CDP automatically. See [browser and storage prerequisites](authentication.md#browser-prerequisites).
 
 To remove stored credentials:
 
@@ -172,7 +172,7 @@ Missing names can be resolved through the entity resources or paginated list too
 
 See the shared [known limitations](client-library.md#known-limitations), especially unconfirmed archived-contact filtering and incomplete MCP error diagnostics. Bounded MCP pages do not repair the client library's separate `GetAll(maxResults)` behavior.
 
-Before calculating totals, follow every continuation cursor with the same filters. A single page is not an account-wide report. Name enrichment uses a bounded lookup cache and may omit names that can be retrieved through entity resources or further list pages.
+Before calculating totals, follow every continuation cursor with the same filters. A single page is not an account-wide report. Name enrichment and entity resources use the same bounded lookup cache. A missing name or entity can appear on a later list page; an entity resource cannot recover a cache miss by itself.
 
 ## Example questions to ask your AI agent
 
