@@ -1,7 +1,54 @@
+using System.Globalization;
+
 namespace Yllibed.TenantCloudClient.Cdp;
 
 internal static class CdpBrowserDiscovery
 {
+	public static async Task<int> WaitForReadyAsync(
+		string profileDirectory, Func<bool> hasExited, TimeSpan timeout, CancellationToken ct)
+	{
+		using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+		timeoutCts.CancelAfter(timeout);
+		var portFile = Path.Combine(profileDirectory, "DevToolsActivePort");
+
+		try
+		{
+			while (true)
+			{
+				timeoutCts.Token.ThrowIfCancellationRequested();
+				if (hasExited())
+				{
+					throw new InvalidOperationException("The browser exited before its CDP endpoint was ready.");
+				}
+
+				string[] lines = [];
+				try
+				{
+					lines = await File.ReadAllLinesAsync(portFile, timeoutCts.Token).ConfigureAwait(false);
+				}
+				catch (IOException)
+				{
+					// Chromium may still be creating or writing the port file.
+				}
+
+				if (lines.Length >= 2
+					&& int.TryParse(lines[0], NumberStyles.None, CultureInfo.InvariantCulture, out var port)
+					&& port is > 0 and <= 65535
+					&& lines[1].StartsWith("/devtools/browser/", StringComparison.Ordinal)
+					&& await FindAnyTargetAsync(port, timeout, timeoutCts.Token).ConfigureAwait(false) is not null)
+				{
+					return port;
+				}
+
+				await Task.Delay(100, timeoutCts.Token).ConfigureAwait(false);
+			}
+		}
+		catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+		{
+			throw new TimeoutException("The browser did not expose a working CDP endpoint before the startup timeout.");
+		}
+	}
+
 	public static async Task<Uri?> FindTenantCloudTargetAsync(
 		int port,
 		string appUrl,

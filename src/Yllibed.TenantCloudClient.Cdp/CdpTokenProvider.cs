@@ -260,19 +260,18 @@ public sealed class CdpTokenProvider : ITcAuthTokenProvider, IDisposable
 	{
 		try
 		{
+			ct.ThrowIfCancellationRequested();
 			var browserPath = ResolveBrowserPath();
 			if (browserPath is null)
 			{
 				return null;
 			}
 
-			var port = Random.Shared.Next(10000, 60000);
-			var tempProfile = Path.Combine(Path.GetTempPath(), $"tc-cdp-{port}");
-
+			var tempProfile = Directory.CreateTempSubdirectory("tc-cdp-").FullName;
 			try
 			{
 				return await LaunchBrowserAndExtractTokensAsync(
-					browserPath, port, tempProfile, ct).ConfigureAwait(false);
+					browserPath, tempProfile, ct).ConfigureAwait(false);
 			}
 			finally
 			{
@@ -280,8 +279,9 @@ public sealed class CdpTokenProvider : ITcAuthTokenProvider, IDisposable
 				TryDeleteDirectory(tempProfile);
 			}
 		}
-		catch
+		catch (Exception) when (!ct.IsCancellationRequested)
 		{
+			// Browser startup failures follow the provider's no-token contract.
 			return null;
 		}
 	}
@@ -298,10 +298,8 @@ public sealed class CdpTokenProvider : ITcAuthTokenProvider, IDisposable
 	}
 
 	private async Task<TcTokenSet?> LaunchBrowserAndExtractTokensAsync(
-		string browserPath, int port, string tempProfile, CancellationToken ct)
+		string browserPath, string tempProfile, CancellationToken ct)
 	{
-		Directory.CreateDirectory(tempProfile);
-
 		var loginUrl = $"{_options.TenantCloudAppUrl.TrimEnd('/')}/login";
 
 		_browserProcess = Process.Start(new ProcessStartInfo
@@ -309,7 +307,7 @@ public sealed class CdpTokenProvider : ITcAuthTokenProvider, IDisposable
 			FileName = browserPath,
 			ArgumentList =
 			{
-				$"--remote-debugging-port={port}",
+				"--remote-debugging-port=0",
 				$"--app={loginUrl}",
 				$"--user-data-dir={tempProfile}",
 				"--no-first-run",
@@ -320,11 +318,11 @@ public sealed class CdpTokenProvider : ITcAuthTokenProvider, IDisposable
 
 		if (_browserProcess is null || _browserProcess.HasExited)
 		{
-			return null;
+			throw new InvalidOperationException("The browser exited before interactive login could start.");
 		}
 
-		// Wait for the browser to start CDP
-		await Task.Delay(2000, ct).ConfigureAwait(false);
+		var port = await CdpBrowserDiscovery.WaitForReadyAsync(
+			tempProfile, () => _browserProcess.HasExited, TimeSpan.FromSeconds(15), ct).ConfigureAwait(false);
 
 		return await PollForLoginCompletionAsync(port, ct).ConfigureAwait(false);
 	}
@@ -336,10 +334,10 @@ public sealed class CdpTokenProvider : ITcAuthTokenProvider, IDisposable
 
 		while (!timeoutCts.Token.IsCancellationRequested)
 		{
-			await Task.Delay(1500, timeoutCts.Token).ConfigureAwait(false);
-
 			try
 			{
+				await Task.Delay(1500, timeoutCts.Token).ConfigureAwait(false);
+
 				var tokens = await TryExtractAfterLoginAsync(port, timeoutCts.Token)
 					.ConfigureAwait(false);
 				if (tokens is not null)
@@ -347,11 +345,11 @@ public sealed class CdpTokenProvider : ITcAuthTokenProvider, IDisposable
 					return tokens;
 				}
 			}
-			catch (OperationCanceledException)
+			catch (OperationCanceledException) when (!ct.IsCancellationRequested)
 			{
 				return null;
 			}
-			catch
+			catch (Exception) when (!ct.IsCancellationRequested)
 			{
 				// CDP not ready yet, keep polling
 			}

@@ -1,15 +1,11 @@
-using System.ComponentModel;
 using System.Text.Json;
-using ModelContextProtocol.Protocol;
-using ModelContextProtocol.Server;
+using Repl;
 
 namespace Yllibed.TenantCloudClient.Mcp.Tools;
 
-[McpServerToolType]
-internal sealed class UserTools
+internal sealed class UserTools(ITcClient client)
 {
-	[McpServerTool(Name = "get_user_info"), Description("Get information about the currently signed-in TenantCloud user.")]
-	public static async Task<CallToolResult> GetUserInfo(ITcClient client, CancellationToken ct)
+	public async Task<object> GetUserInfo(CancellationToken ct)
 	{
 		try
 		{
@@ -17,14 +13,14 @@ internal sealed class UserTools
 
 			if (user is null)
 			{
-				return ToolResults.Error("No user info available. You may not be authenticated.");
+				return Results.Error("authentication", "No user info available. You may not be authenticated.");
 			}
 
-			return ToolResults.Success(JsonSerializer.Serialize(user, McpJsonContext.Default.TcUserInfo));
+			return JsonSerializer.SerializeToNode(user, McpJsonContext.Default.TcUserInfo)!;
 		}
 		catch (TcClientException ex)
 		{
-			return ToolResults.Error($"{ex.Message} (HTTP {(int)ex.HttpStatus})");
+			return Results.Error("tenantcloud", $"{ex.Message} (HTTP {(int)ex.HttpStatus})");
 		}
 	}
 }

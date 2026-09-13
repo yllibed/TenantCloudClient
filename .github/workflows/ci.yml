@@ -162,16 +162,35 @@ jobs:
           src/Yllibed.TenantCloudClient.Mcp/Yllibed.TenantCloudClient.Mcp.csproj
           -c Release
           -p:SelfContained=false
+          -p:PublishSelfContained=false
+          -p:UseAppHost=false
           -p:PublishSingleFile=false
           -p:PublishTrimmed=false
           -p:PublishReadyToRun=false
           -o publish/any
 
+      - name: Package binary
+        shell: bash
+        run: |
+          mkdir -p archives
+          archive="$PWD/archives/tc-mcp-${{ matrix.rid }}.zip"
+          (cd "publish/${{ matrix.rid }}" && zip -r "$archive" . -x '*.pdb' '*.xml')
+
+      - name: Smoke test portable archive
+        if: matrix.rid == 'any'
+        shell: bash
+        run: |
+          extracted=$(mktemp -d)
+          unzip archives/tc-mcp-any.zip -d "$extracted"
+          cd "$extracted"
+          dotnet tc-mcp.dll --help
+
       - name: Upload binary
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: tc-mcp-${{ matrix.rid }}
-          path: publish/${{ matrix.rid }}/tc-mcp*
+          path: archives/tc-mcp-${{ matrix.rid }}.zip
+          if-no-files-found: error
           retention-days: 14
 
   release:
@@ -218,12 +237,7 @@ jobs:
           mkdir -p release-assets
           assets="$PWD/release-assets"
           cp artifacts/packages/*.nupkg "$assets/" 2>/dev/null || true
-          for dir in artifacts/binaries/tc-mcp-*/; do
-            rid=$(basename "$dir" | sed 's/tc-mcp-//')
-            # Zip all non-debug files for each platform
-            (cd "$dir" && zip -j "$assets/tc-mcp-${rid}.zip" \
-              $(ls tc-mcp* | grep -v '\.pdb$' | grep -v '\.xml$'))
-          done
+          cp artifacts/binaries/tc-mcp-*/*.zip "$assets/"
           ls -la "$assets/"
 
       - name: Create GitHub Release

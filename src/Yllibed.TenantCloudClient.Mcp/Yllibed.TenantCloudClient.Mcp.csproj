@@ -12,8 +12,10 @@
 	<PropertyGroup>
 		<PublishReadyToRun>true</PublishReadyToRun>
 		<PublishSingleFile>true</PublishSingleFile>
-		<PublishTrimmed>true</PublishTrimmed>
-		<SelfContained>true</SelfContained>
+		<!-- Repl uses reflection for handler binding and output formatting. -->
+		<PublishTrimmed>false</PublishTrimmed>
+		<EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+		<PublishSelfContained>true</PublishSelfContained>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -24,6 +26,11 @@
 	<ItemGroup>
 		<PackageReference Include="ModelContextProtocol" />
 		<PackageReference Include="Microsoft.Extensions.Hosting" />
+		<PackageReference Include="Repl" />
+		<PackageReference Include="Repl.Mcp" />
+	</ItemGroup>
+	<ItemGroup>
+		<InternalsVisibleTo Include="Yllibed.TenantCloudClient.Tests" />
 	</ItemGroup>
 
 </Project>
