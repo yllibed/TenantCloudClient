@@ -6,7 +6,7 @@ on:
     branches: [master, 'release/**']
 
 permissions:
-  contents: write
+  contents: read
   checks: write
 
 env:
@@ -27,13 +27,25 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 0 # Nerdbank.GitVersioning needs full history
 
-      - name: Validate release version
-        if: startsWith(github.ref, 'refs/heads/release/')
+      - name: Validate publication channel
+        if: github.event_name == 'push'
         shell: pwsh
         run: |
           $version = (Get-Content version.json -Raw | ConvertFrom-Json).version
-          if ($version -match '-') {
-            throw 'Release branches require a committed stable version. Prepare and review version.json before pushing.'
+          if ($env:GITHUB_REF -eq 'refs/heads/master') {
+            if ($version -notmatch '-') {
+              throw 'The master branch must declare a prerelease version.'
+            }
+          } elseif ($env:GITHUB_REF -match '^refs/heads/release/v(?<series>\d+\.\d+)$') {
+            $series = $Matches.series
+            if ($version -match '-') {
+              throw 'Release branches require a committed stable version.'
+            }
+            if ($version -notmatch '^(?<series>\d+\.\d+)(?:\.\d+)?$' -or $Matches.series -ne $series) {
+              throw "Branch $env:GITHUB_REF must declare a stable $series version."
+            }
+          } else {
+            throw "Unsupported publication branch: $env:GITHUB_REF"
           }
 
       - name: Setup .NET
@@ -192,6 +204,9 @@ jobs:
     needs: [build-test-pack, publish-binaries]
     if: success() && github.event_name == 'push' && (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/release/'))
     runs-on: ubuntu-latest
+    environment: nuget-production
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -237,6 +252,51 @@ jobs:
               }
             } finally { $archive.Dispose() }
           }
+
+      - name: Validate existing release provenance
+        shell: pwsh
+        env:
+          RELEASE_VERSION: ${{ needs.build-test-pack.outputs.version }}
+          RELEASE_SHA: ${{ github.sha }}
+        run: |
+          $tag = "v$env:RELEASE_VERSION"
+          $tagRefs = @(git ls-remote --tags origin "refs/tags/$tag" "refs/tags/$tag^{}")
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if ($tagRefs.Count -gt 0) {
+            $peeled = @($tagRefs | Where-Object { $_ -match '\^\{\}$' })
+            $tagSha = (($peeled.Count -gt 0 ? $peeled[0] : $tagRefs[0]) -split '\s+')[0]
+            if ($tagSha -ne $env:RELEASE_SHA) {
+              throw "Tag $tag points to $tagSha instead of $env:RELEASE_SHA. Publish a new version."
+            }
+          }
+
+          $client = [System.Net.Http.HttpClient]::new()
+          try {
+            foreach ($package in Get-ChildItem artifacts/packages/*.nupkg) {
+              $archive = [System.IO.Compression.ZipFile]::OpenRead($package.FullName)
+              try {
+                $entry = @($archive.Entries | Where-Object { $_.FullName.EndsWith('.nuspec') })[0]
+                $reader = [System.IO.StreamReader]::new($entry.Open())
+                try { [xml]$localSpec = $reader.ReadToEnd() } finally { $reader.Dispose() }
+              } finally { $archive.Dispose() }
+
+              $id = [string]$localSpec.package.metadata.id
+              $lowerId = $id.ToLowerInvariant()
+              $lowerVersion = $env:RELEASE_VERSION.ToLowerInvariant()
+              $uri = "https://api.nuget.org/v3-flatcontainer/$lowerId/$lowerVersion/$lowerId.nuspec"
+              $response = $client.GetAsync($uri).GetAwaiter().GetResult()
+              try {
+                if ($response.StatusCode -eq [System.Net.HttpStatusCode]::NotFound) { continue }
+                [void]$response.EnsureSuccessStatusCode()
+                [xml]$remoteSpec = $response.Content.ReadAsStringAsync().GetAwaiter().GetResult()
+              } finally { $response.Dispose() }
+
+              $publishedSha = [string]$remoteSpec.package.metadata.repository.commit
+              if ($publishedSha -ne $env:RELEASE_SHA) {
+                throw "$id $env:RELEASE_VERSION is already published from '$publishedSha', not $env:RELEASE_SHA. Publish a new version."
+              }
+            }
+          } finally { $client.Dispose() }
 
       - name: Prepare release assets
         shell: bash

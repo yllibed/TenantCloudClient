@@ -36,20 +36,26 @@ The [workflow](../.github/workflows/ci.yml) runs on pull requests and pushes to
 | Push to `release/**` | Yes | All configured targets | Stable |
 
 All jobs check out the triggering SHA. CI does not change or commit the version
-file. A release branch that still declares a prerelease version is rejected
-before building. The build job resolves the version once and passes it to the
-release job, which targets that same SHA when creating the tag.
+file. `master` must declare a prerelease version. A release branch must use the
+exact `release/vMAJOR.MINOR` form and declare a matching stable version. The
+build job resolves the version once and passes it to the release job, which
+targets that same SHA when creating the tag.
 
 NuGet publication waits for builds, tests, binary packaging and the portable
 archive smoke test. A successful cross-publish is not an execution test on that
 target OS. Platform archives retain ReadyToRun and all required dependencies;
 the portable archive is framework-dependent and requires .NET 10.
 
-Required credentials are `NUGET_API_KEY` for nuget.org and the workflow's
-`GITHUB_TOKEN` for the GitHub release. PRs never execute publication steps.
-Publication to NuGet and GitHub is not atomic: if one succeeds and the other
-fails, inspect the existing packages and tag before retrying. Do not overwrite
-a published version or move its tag; publish a new version for corrections.
+The release job uses the protected `nuget-production` environment. Store
+`NUGET_API_KEY` only as an environment secret, not a repository secret. Its
+required reviewer approves the deployment before the job can access the secret;
+PRs never execute publication steps. The workflow's scoped `GITHUB_TOKEN` creates
+the GitHub release.
+
+Publication to NuGet and GitHub is not atomic. Before a retry publishes anything,
+CI checks any existing tag and NuGet packages against the triggering commit using
+the repository commit recorded in each package. A mismatch fails the release;
+publish a new version rather than overwriting a package or moving a tag.
 
 ## 3.0 stable checklist
 
@@ -113,15 +119,17 @@ strip the suffix for you.
 
 ## Publish after approval
 
-**This push publishes stable NuGet packages and a GitHub release automatically:**
+**This push starts the stable publication workflow:**
 
 ```bash
 git push -u origin release/v3.0
 ```
 
-Watch the workflow to completion, inspect the release assets and verify that its
-tag points to the approved commit. Then push the reviewed next-development-cycle
-commit on `master` through the normal review process; this triggers a prerelease.
+Review the pending `nuget-production` deployment and approve it only after
+confirming the triggering commit. Watch the workflow to completion, inspect the
+release assets and verify that its tag points to the approved commit. Then push
+the reviewed next-development-cycle commit on `master` through the normal review
+process; this starts a prerelease deployment subject to the same approval.
 
 For hotfixes, review and test changes on the release branch before pushing.
 Nerdbank.GitVersioning increments the patch component with git height. Each push
