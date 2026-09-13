@@ -3,24 +3,47 @@
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
 		<TargetFramework>net10.0</TargetFramework>
-		<AssemblyName>tc-mcp</AssemblyName>
-		<IsPackable>false</IsPackable>
+		<AssemblyName>tenantcloud</AssemblyName>
+		<PackAsTool>true</PackAsTool>
+		<ToolCommandName>tenantcloud</ToolCommandName>
+		<PackageId>Yllibed.TenantCloudClient.Tool</PackageId>
 		<!-- XML docs will be added incrementally -->
 		<NoWarn>CS1591</NoWarn>
 	</PropertyGroup>
 
 	<PropertyGroup>
+		<Authors>Carl de Billy</Authors>
+		<Company>Yllibed project</Company>
+		<Product>TenantCloud CLI, REPL and MCP Server</Product>
+		<Description>Unofficial TenantCloud CLI, interactive REPL and MCP server.</Description>
+		<Copyright>Copyright (C) 2019-$([System.DateTime]::Now.Year) - Carl de Billy - All Rights Reserved</Copyright>
+		<PackageProjectUrl>https://github.com/yllibed/TenantCloudClient</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/yllibed/TenantCloudClient</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageTags>tenantcloud;cli;repl;mcp;dotnet-tool</PackageTags>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(RuntimeIdentifier)' != ''">
 		<PublishReadyToRun>true</PublishReadyToRun>
 		<PublishSingleFile>true</PublishSingleFile>
+		<PublishSelfContained>true</PublishSelfContained>
+	</PropertyGroup>
+
+	<PropertyGroup>
 		<!-- Repl uses reflection for handler binding and output formatting. -->
 		<PublishTrimmed>false</PublishTrimmed>
 		<EnableTrimAnalyzer>false</EnableTrimAnalyzer>
-		<PublishSelfContained>true</PublishSelfContained>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\Yllibed.TenantCloudClient\Yllibed.TenantCloudClient.csproj" />
 		<ProjectReference Include="..\Yllibed.TenantCloudClient.Cdp\Yllibed.TenantCloudClient.Cdp.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="..\..\docs\nuget-tool.md" Pack="true" PackagePath="\README.md" />
 	</ItemGroup>
 
 	<ItemGroup>

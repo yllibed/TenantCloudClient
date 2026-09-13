@@ -26,7 +26,7 @@ public class TestBase
 		{
 			Assert.Inconclusive(
 				"No TenantCloud auth token available. " +
-				"Set TC_AUTH_TOKEN or sign in via tc-mcp to run integration tests.");
+				"Set TC_AUTH_TOKEN or sign in via tenantcloud to run integration tests.");
 		}
 
 		TokenProvider = s_cachedProvider;

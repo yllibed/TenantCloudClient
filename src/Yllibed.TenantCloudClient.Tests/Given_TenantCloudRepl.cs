@@ -153,6 +153,26 @@ public sealed class Given_TenantCloudRepl
 	}
 
 	[TestMethod]
+	public void When_CreatingStableDnxLauncher_Then_UsesLatestStablePackage()
+	{
+		var launch = InstallCommand.CreateDnxLaunchCommand("3.0.61+abcdef");
+
+		launch.Command.Should().Be("dotnet");
+		launch.Arguments.Should().Equal(
+			"dnx", "Yllibed.TenantCloudClient.Tool", "--yes", "--", "mcp", "serve");
+	}
+
+	[TestMethod]
+	public void When_CreatingPrereleaseDnxLauncher_Then_UsesLatestPrereleasePackage()
+	{
+		var launch = InstallCommand.CreateDnxLaunchCommand("3.0.61-dev+abcdef");
+
+		launch.Command.Should().Be("dotnet");
+		launch.Arguments.Should().Equal(
+			"dnx", "Yllibed.TenantCloudClient.Tool", "--prerelease", "--yes", "--", "mcp", "serve");
+	}
+
+	[TestMethod]
 	public void When_ReadingGuide_Then_EntityFieldsMatchToolJson()
 	{
 		var guide = SchemaResource.GetSchema();
