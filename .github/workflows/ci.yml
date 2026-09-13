@@ -18,25 +18,22 @@ jobs:
   build-test-pack:
     name: Build, Test, Pack
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
+          ref: ${{ github.sha }}
           fetch-depth: 0 # Nerdbank.GitVersioning needs full history
 
-      - name: Prepare release branch
+      - name: Validate release version
         if: startsWith(github.ref, 'refs/heads/release/')
         shell: pwsh
         run: |
-          $content = Get-Content version.json -Raw
-          if ($content -match '"version"\s*:\s*"[^"]*-') {
-            $content = $content -replace '("version"\s*:\s*"[^"]*)-[^"]*"', '$1"'
-            Set-Content version.json $content -NoNewline
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add version.json
-            git commit -m "chore: strip pre-release tag for release branch"
-            git push
+          $version = (Get-Content version.json -Raw | ConvertFrom-Json).version
+          if ($version -match '-') {
+            throw 'Release branches require a committed stable version. Prepare and review version.json before pushing.'
           }
 
       - name: Setup .NET
@@ -44,6 +41,19 @@ jobs:
         with:
           dotnet-version: '10.0.x'
           dotnet-quality: ga
+
+      - name: Resolve version
+        id: version
+        shell: pwsh
+        run: |
+          [xml]$packages = Get-Content src/Directory.Packages.props -Raw
+          $toolVersion = $packages.SelectSingleNode('//PackageVersion[@Include="Nerdbank.GitVersioning"]').Version
+          $toolPath = Join-Path $env:RUNNER_TEMP 'nbgv'
+          dotnet tool install nbgv --version $toolVersion --tool-path $toolPath
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $version = & (Join-Path $toolPath 'nbgv') get-version -v NuGetPackageVersion
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          "version=$version" >> $env:GITHUB_OUTPUT
 
       - name: Restore
         run: dotnet restore src/TenantCloud.slnx --force
@@ -110,23 +120,6 @@ jobs:
           path: ${{ runner.temp }}/packages/*.nupkg
           retention-days: 14
 
-      - name: Resolve version
-        id: version
-        if: success() && github.event_name == 'push'
-        shell: pwsh
-        run: |
-          dotnet tool install -g nbgv
-          $v = nbgv get-version -v NuGetPackageVersion
-          echo "version=$v" >> $env:GITHUB_OUTPUT
-
-      - name: Publish to NuGet
-        if: success() && github.event_name == 'push'
-        run: >-
-          dotnet nuget push "${{ runner.temp }}/packages/*.nupkg"
-          --source https://api.nuget.org/v3/index.json
-          --api-key ${{ secrets.NUGET_API_KEY }}
-          --skip-duplicate
-
   publish-binaries:
     name: Publish Binaries
     needs: build-test-pack
@@ -138,6 +131,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
+          ref: ${{ github.sha }}
           fetch-depth: 0
 
       - name: Setup .NET
@@ -202,6 +196,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
+          ref: ${{ github.sha }}
           fetch-depth: 0
 
       - name: Setup .NET
@@ -209,14 +204,6 @@ jobs:
         with:
           dotnet-version: '10.0.x'
           dotnet-quality: ga
-
-      - name: Resolve version
-        id: version
-        shell: pwsh
-        run: |
-          dotnet tool install -g nbgv
-          $v = nbgv get-version -v NuGetPackageVersion
-          echo "version=$v" >> $env:GITHUB_OUTPUT
 
       - name: Download packages
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
@@ -231,21 +218,53 @@ jobs:
           path: artifacts/binaries
           merge-multiple: false
 
+      - name: Validate package versions
+        shell: pwsh
+        env:
+          RELEASE_VERSION: ${{ needs.build-test-pack.outputs.version }}
+        run: |
+          $packages = @(Get-ChildItem artifacts/packages/*.nupkg)
+          if ($packages.Count -eq 0) { throw 'No NuGet packages were downloaded.' }
+          foreach ($package in $packages) {
+            $archive = [System.IO.Compression.ZipFile]::OpenRead($package.FullName)
+            try {
+              $spec = @($archive.Entries | Where-Object { $_.FullName.EndsWith('.nuspec') })
+              if ($spec.Count -ne 1) { throw "Expected one nuspec in $($package.Name)." }
+              $reader = [System.IO.StreamReader]::new($spec[0].Open())
+              try { [xml]$metadata = $reader.ReadToEnd() } finally { $reader.Dispose() }
+              if ($metadata.package.metadata.version -ne $env:RELEASE_VERSION) {
+                throw "Package version mismatch in $($package.Name)."
+              }
+            } finally { $archive.Dispose() }
+          }
+
       - name: Prepare release assets
         shell: bash
         run: |
           mkdir -p release-assets
           assets="$PWD/release-assets"
-          cp artifacts/packages/*.nupkg "$assets/" 2>/dev/null || true
+          cp artifacts/packages/*.nupkg "$assets/"
           cp artifacts/binaries/tc-mcp-*/*.zip "$assets/"
           ls -la "$assets/"
+
+      - name: Publish to NuGet
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: >-
+          dotnet nuget push "artifacts/packages/*.nupkg"
+          --source https://api.nuget.org/v3/index.json
+          --api-key "$NUGET_API_KEY"
+          --skip-duplicate
 
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_VERSION: ${{ needs.build-test-pack.outputs.version }}
+          RELEASE_SHA: ${{ github.sha }}
         run: >-
-          gh release create "v${{ steps.version.outputs.version }}"
+          gh release create "v$RELEASE_VERSION"
           release-assets/*
-          --title "v${{ steps.version.outputs.version }}"
+          --target "$RELEASE_SHA"
+          --title "v$RELEASE_VERSION"
           --generate-notes
-          ${{ contains(steps.version.outputs.version, '-') && '--prerelease' || '' }}
+          ${{ contains(needs.build-test-pack.outputs.version, '-') && '--prerelease' || '' }}
