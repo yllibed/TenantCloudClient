@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
@@ -6,25 +7,25 @@ namespace Yllibed.TenantCloudClient.Mcp;
 
 internal static class InstallCommand
 {
-	public static int Run(ReadOnlySpan<string> args)
+	private const string ToolPackageId = "Yllibed.TenantCloudClient.Tool";
+
+	public static int Run(string target, bool dnx)
 	{
-		if (args.Length == 0)
+		var launch = CreateLaunchCommand(dnx);
+		if (launch is null)
 		{
-			Console.Error.WriteLine("Usage: tc-mcp install <target>");
-			Console.Error.WriteLine("  Targets: claude-desktop, claude-code");
+			Console.Error.WriteLine("Error: Could not determine the current executable path.");
 			return 1;
 		}
 
-		var target = args[0];
-
 		if (string.Equals(target, "claude-desktop", StringComparison.OrdinalIgnoreCase))
 		{
-			return InstallClaudeDesktop();
+			return InstallClaudeDesktop(launch);
 		}
 
 		if (string.Equals(target, "claude-code", StringComparison.OrdinalIgnoreCase))
 		{
-			return InstallClaudeCode();
+			return InstallClaudeCode(launch);
 		}
 
 		Console.Error.WriteLine($"Unknown install target: {target}");
@@ -32,15 +33,41 @@ internal static class InstallCommand
 		return 1;
 	}
 
-	private static int InstallClaudeDesktop()
+	internal static LaunchCommand CreateDnxLaunchCommand(string? informationalVersion)
 	{
-		var exePath = Environment.ProcessPath;
-		if (string.IsNullOrEmpty(exePath))
+		var args = new List<string> { "dnx", ToolPackageId };
+		if (IsPrerelease(informationalVersion))
 		{
-			Console.Error.WriteLine("Error: Could not determine the current executable path.");
-			return 1;
+			args.Add("--prerelease");
+		}
+		args.Add("--yes");
+		args.Add("--");
+		args.Add("mcp");
+		args.Add("serve");
+		return new("dotnet", args);
+	}
+
+	private static LaunchCommand? CreateLaunchCommand(bool dnx)
+	{
+		if (dnx)
+		{
+			var version = typeof(InstallCommand).Assembly
+				.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+			return CreateDnxLaunchCommand(version);
 		}
 
+		var exePath = Environment.ProcessPath;
+		return string.IsNullOrEmpty(exePath) ? null : new(exePath, ["mcp", "serve"]);
+	}
+
+	private static bool IsPrerelease(string? informationalVersion)
+	{
+		var version = informationalVersion?.Split('+', 2)[0];
+		return version?.Contains('-', StringComparison.Ordinal) is true;
+	}
+
+	private static int InstallClaudeDesktop(LaunchCommand launch)
+	{
 		var configPath = GetClaudeDesktopConfigPath();
 		if (configPath is null)
 		{
@@ -74,8 +101,8 @@ internal static class InstallCommand
 
 		servers["tc-mcp"] = new JsonObject
 		{
-			["command"] = exePath,
-			["args"] = new JsonArray("mcp", "serve"),
+			["command"] = launch.Command,
+			["args"] = new JsonArray(launch.Arguments.Select(argument => JsonValue.Create(argument)).ToArray()),
 		};
 
 		var options = new JsonSerializerOptions { WriteIndented = true };
@@ -109,25 +136,22 @@ internal static class InstallCommand
 		return null;
 	}
 
-	private static int InstallClaudeCode()
+	private static int InstallClaudeCode(LaunchCommand launch)
 	{
-		var exePath = Environment.ProcessPath;
-		if (string.IsNullOrEmpty(exePath))
-		{
-			Console.Error.WriteLine("Error: Could not determine the current executable path.");
-			return 1;
-		}
-
 		try
 		{
 			var psi = new ProcessStartInfo
 			{
 				FileName = "claude",
-				ArgumentList = { "mcp", "add", "--transport", "stdio", "tc-mcp", "--", exePath, "mcp", "serve" },
 				UseShellExecute = false,
 				RedirectStandardOutput = true,
 				RedirectStandardError = true,
 			};
+			foreach (var argument in new[] { "mcp", "add", "--transport", "stdio", "tc-mcp", "--", launch.Command }
+				.Concat(launch.Arguments))
+			{
+				psi.ArgumentList.Add(argument);
+			}
 
 			using var process = Process.Start(psi);
 			if (process is null)
@@ -169,4 +193,6 @@ internal static class InstallCommand
 			return 1;
 		}
 	}
+
+	internal sealed record LaunchCommand(string Command, IReadOnlyList<string> Arguments);
 }

@@ -18,7 +18,7 @@ internal static class AuthCommands
 		var existing = await store.LoadAsync(CancellationToken.None).ConfigureAwait(false);
 		if (existing is not null)
 		{
-			await Console.Out.WriteLineAsync("Already logged in. Use 'tc-mcp logout' first to re-authenticate.").ConfigureAwait(false);
+			await Console.Out.WriteLineAsync("Already logged in. Use 'tenantcloud logout' first to re-authenticate.").ConfigureAwait(false);
 			return 0;
 		}
 
