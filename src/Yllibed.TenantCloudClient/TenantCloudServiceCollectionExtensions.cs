@@ -17,6 +17,15 @@ public static class TenantCloudServiceCollectionExtensions
 		return services;
 	}
 
+	/// <summary>Registers a singleton client with explicit per-instance rate limiting settings.</summary>
+	public static IServiceCollection AddTenantCloudClient(this IServiceCollection services, TcRateLimitOptions options)
+	{
+		ArgumentNullException.ThrowIfNull(options);
+		TcRateLimitOptions.Validate(options);
+		services.AddSingleton<ITcClient>(sp => new TcClient(sp.GetRequiredService<ITcAuthTokenProvider>(), options));
+		return services;
+	}
+
 	/// <summary>
 	/// Registers <see cref="ITcTokenStore"/> using the OS-native <see cref="SecureTokenStore"/>
 	/// (DPAPI on Windows, Keychain on macOS, Secret Service on Linux).

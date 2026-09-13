@@ -8,6 +8,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="AwesomeAssertions" />
+		<PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
 		<PackageReference Include="Repl.Testing" />
 	</ItemGroup>
 

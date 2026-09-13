@@ -24,6 +24,7 @@ The 3.0 line is currently in prerelease. See the [stable release checklist](docs
 - **[MCP Server](docs/mcp-server.md)** — Installation, auto-configuration for AI agents, available tools
 - **[Authentication](docs/authentication.md)** — CDP flow, SecureTokenStore, FileTokenStore, custom providers
 - **[Release Process](docs/release-process.md)** — Stable release criteria, versioning and publication
+- **[Rate limiting](docs/client-library.md#rate-limiting)** — Request pacing, HTTP 429 retries, configuration and errors
 
 ## Quick start
 

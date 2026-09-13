@@ -42,6 +42,13 @@ using var client = new TcClient(tokenProvider);
 var user = await client.GetUserInfo(CancellationToken.None);
 ```
 
+## Rate limiting
+
+Data reads are paced and HTTP 429 responses retried by default. Configure this
+per client with `TcRateLimitOptions`, passed to `TcClient` or
+`AddTenantCloudClient`. See the [rate-limiting guide](https://github.com/yllibed/TenantCloudClient/blob/master/docs/client-library.md#rate-limiting)
+for defaults, waiting budgets and `TcRateLimitException` metadata.
+
 ## API
 
 | Member | Type | Description |

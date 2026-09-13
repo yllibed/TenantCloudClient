@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json.Serialization.Metadata;
+using Yllibed.TenantCloudClient.Internal;
 
 namespace Yllibed.TenantCloudClient;
 
@@ -10,10 +11,33 @@ public class TcClient : IDisposable, ITcClient
 {
 	private readonly ITcAuthTokenProvider _tokenProvider;
 	private readonly HttpClient _httpClient;
+	private readonly TcRateLimitOptions _rateLimitOptions;
+	private readonly TimeProvider _timeProvider;
+	private readonly Func<double> _jitter;
+	private readonly TcRequestScheduler _scheduler;
 
 	public TcClient(ITcAuthTokenProvider tokenProvider)
+		: this(tokenProvider, new TcRateLimitOptions())
 	{
+	}
+
+	/// <summary>Creates a client with per-instance pacing and HTTP 429 retry settings.</summary>
+	public TcClient(ITcAuthTokenProvider tokenProvider, TcRateLimitOptions options)
+		: this(tokenProvider, options, null, TimeProvider.System, Random.Shared.NextDouble)
+	{
+	}
+
+	internal TcClient(ITcAuthTokenProvider tokenProvider, TcRateLimitOptions options,
+		HttpMessageHandler? handler, TimeProvider timeProvider, Func<double> jitter)
+	{
+		ArgumentNullException.ThrowIfNull(tokenProvider);
+		ArgumentNullException.ThrowIfNull(options);
+		TcRateLimitOptions.Validate(options);
 		_tokenProvider = tokenProvider;
+		_rateLimitOptions = options;
+		_timeProvider = timeProvider;
+		_jitter = jitter;
+		_scheduler = new(options, timeProvider);
 
 		Contacts = new PaginatedSource<TcContact>(
 			(ct, page, extra) => GetJsonApiPage(ct, "contacts", page, extra,
@@ -35,7 +59,7 @@ public class TcClient : IDisposable, ITcClient
 			(ct, page, extra) => GetJsonApiPage(ct, "leases", page, extra,
 				TcJsonSerializerContext.Default.TcJsonApiResponseTcLease), "");
 
-		var httpHandler = new HttpClientHandler()
+		var httpHandler = handler ?? new HttpClientHandler()
 		{
 			UseCookies = false,
 			UseDefaultCredentials = false,
@@ -98,8 +122,21 @@ public class TcClient : IDisposable, ITcClient
 
 	private async Task<T> HttpGet<T>(CancellationToken ct, string uri, JsonTypeInfo<T> typeInfo)
 	{
-		var req = new HttpRequestMessage(HttpMethod.Get, uri);
-		using var response = await HttpSend(ct, req).ConfigureAwait(false);
+		var budget = _scheduler.CreateBudget();
+		await _scheduler.EnterAsync(budget, ct).ConfigureAwait(false);
+		try
+		{
+			return await ReadResponse(ct, uri, typeInfo, budget).ConfigureAwait(false);
+		}
+		finally
+		{
+			_scheduler.Exit();
+		}
+	}
+
+	private async Task<T> ReadResponse<T>(CancellationToken ct, string uri, JsonTypeInfo<T> typeInfo, TcRequestScheduler.WaitBudget budget)
+	{
+		using var response = await HttpSend(ct, uri, budget).ConfigureAwait(false);
 		var stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
 		await using var _ = stream.ConfigureAwait(false);
 
@@ -115,7 +152,7 @@ public class TcClient : IDisposable, ITcClient
 		}
 	}
 
-	private async Task<HttpResponseMessage> HttpSend(CancellationToken ct, HttpRequestMessage request)
+	private async Task<HttpResponseMessage> HttpSend(CancellationToken ct, string uri, TcRequestScheduler.WaitBudget budget)
 	{
 		var token = await _tokenProvider.GetToken(ct).ConfigureAwait(false);
 
@@ -124,34 +161,55 @@ public class TcClient : IDisposable, ITcClient
 			throw new TcClientException(HttpStatusCode.Unauthorized, "No auth token available");
 		}
 
-		request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-		var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
-
-		if (response.StatusCode != HttpStatusCode.Unauthorized)
+		var authenticationRetried = false;
+		var retries = 0;
+		while (true)
 		{
-			return response;
+			await _scheduler.WaitForTurnAsync(budget, ct).ConfigureAwait(false);
+			using var request = new HttpRequestMessage(HttpMethod.Get, uri);
+			request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+			_scheduler.MarkStart();
+			var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
+			if (response.StatusCode == HttpStatusCode.TooManyRequests)
+			{
+				TcRateLimitException error;
+				using (response)
+				{
+					error = new TcRateLimitException(response, _timeProvider);
+				}
+				if (!_rateLimitOptions.Enabled)
+				{
+					throw error;
+				}
+				var delay = error.RetryAfter ?? TimeSpan.FromSeconds(Math.Pow(2, Math.Min(retries, 30)) + (_jitter() * 0.25));
+				_scheduler.Pause(delay);
+				budget.RateLimitFailure = error;
+				if (retries >= _rateLimitOptions.MaxRetries)
+				{
+					throw error;
+				}
+				retries++;
+				continue;
+			}
+			if (response.StatusCode != HttpStatusCode.Unauthorized || authenticationRetried)
+			{
+				return response;
+			}
+			response.Dispose();
+			authenticationRetried = true;
+			await _tokenProvider.OnTokenRejected(ct, token).ConfigureAwait(false);
+			var newToken = await _tokenProvider.GetToken(ct).ConfigureAwait(false);
+			if (string.IsNullOrEmpty(newToken) || string.Equals(newToken, token, StringComparison.Ordinal))
+			{
+				throw new TcClientException(HttpStatusCode.Unauthorized, "Auth token rejected and no new token available");
+			}
+			token = newToken;
 		}
-
-		// Token was rejected — notify provider and try once more
-		response.Dispose();
-		await _tokenProvider.OnTokenRejected(ct, token).ConfigureAwait(false);
-
-		var newToken = await _tokenProvider.GetToken(ct).ConfigureAwait(false);
-
-		if (string.IsNullOrEmpty(newToken) || string.Equals(newToken, token, StringComparison.Ordinal))
-		{
-			throw new TcClientException(HttpStatusCode.Unauthorized, "Auth token rejected and no new token available");
-		}
-
-		// HttpRequestMessage cannot be reused after SendAsync, so create a new one
-		var retryRequest = new HttpRequestMessage(request.Method, request.RequestUri);
-		retryRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", newToken);
-
-		return await _httpClient.SendAsync(retryRequest, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
 	}
 
 	public void Dispose()
 	{
 		_httpClient.Dispose();
+		_scheduler.Dispose();
 	}
 }
