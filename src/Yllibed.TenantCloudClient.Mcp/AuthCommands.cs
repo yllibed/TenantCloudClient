@@ -38,7 +38,7 @@ internal static class AuthCommands
 			return 1;
 		}
 
-		await Console.Out.WriteLineAsync("Login successful. Tokens stored in secure credential store.").ConfigureAwait(false);
+		await Console.Out.WriteLineAsync("Login successful.").ConfigureAwait(false);
 		return 0;
 	}
 

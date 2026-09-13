@@ -152,6 +152,28 @@ public sealed class Given_TenantCloudRepl
 		options.ResourceCollection.Should().HaveCount(4);
 	}
 
+	[TestMethod]
+	public void When_ReadingGuide_Then_EntityFieldsMatchToolJson()
+	{
+		var guide = SchemaResource.GetSchema();
+		foreach (var field in new[]
+		{
+			"property_status", "property_id", "is_rented", "pets_allowed", "is_furnished", "is_utilities",
+			"unit_id", "user_payer_id", "date", "paid_at", "created_at", "is_recurring",
+			"user_client_id", "rent_from", "rent_to", "move_out_date", "lease_status",
+		})
+		{
+			guide.Should().Contain($"`{field}`");
+		}
+
+		var entities = guide[..guide.IndexOf("## Tool Filters", StringComparison.Ordinal)];
+		entities.Should().NotContain("`propertyId`")
+			.And.NotContain("`payerId`")
+			.And.NotContain("`tenantId`");
+		guide.Split('\n').Single(line => line.Contains("`price`", StringComparison.Ordinal))
+			.Should().StartWith("- `price`");
+	}
+
 	private static ReplPageRequest Request(int size, string? cursor = null) => new(size, cursor, null, false, ReplResultSurface.Programmatic);
 
 	private sealed class PagingContext : IReplPagingContext
