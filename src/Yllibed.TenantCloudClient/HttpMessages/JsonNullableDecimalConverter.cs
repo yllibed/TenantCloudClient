@@ -16,12 +16,18 @@ public class JsonNullableDecimalConverter : JsonConverter<decimal?>
 			case JsonTokenType.Null:
 				return null;
 			case JsonTokenType.Number:
-				return reader.GetDecimal();
+				return reader.TryGetDecimal(out var number)
+					? number : throw new JsonException("Number is outside the decimal range.");
 			case JsonTokenType.String:
 				var str = reader.GetString();
-				return string.IsNullOrWhiteSpace(str) ? null : decimal.Parse(str, CultureInfo.InvariantCulture);
+				if (string.IsNullOrWhiteSpace(str))
+				{
+					return null;
+				}
+				return decimal.TryParse(str, NumberStyles.Number, CultureInfo.InvariantCulture, out var parsed)
+					? parsed : throw new JsonException("Expected a decimal number string.");
 			default:
-				throw new NotSupportedException($"Type {reader.TokenType} not supported for nullable decimal");
+				throw new JsonException($"Type {reader.TokenType} not supported for nullable decimal");
 		}
 	}
 

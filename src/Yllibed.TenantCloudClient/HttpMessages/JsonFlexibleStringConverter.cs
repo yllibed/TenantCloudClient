@@ -1,5 +1,3 @@
-using System.Globalization;
-
 namespace Yllibed.TenantCloudClient.HttpMessages;
 
 /// <summary>
@@ -16,9 +14,10 @@ public class JsonFlexibleStringConverter : JsonConverter<string?>
 			case JsonTokenType.String:
 				return reader.GetString();
 			case JsonTokenType.Number:
-				return reader.TryGetInt64(out var l)
-					? l.ToString(CultureInfo.InvariantCulture)
-					: reader.GetDouble().ToString(CultureInfo.InvariantCulture);
+				using (var value = JsonDocument.ParseValue(ref reader))
+				{
+					return value.RootElement.GetRawText();
+				}
 			case JsonTokenType.True:
 				return "true";
 			case JsonTokenType.False:
@@ -26,7 +25,7 @@ public class JsonFlexibleStringConverter : JsonConverter<string?>
 			case JsonTokenType.Null:
 				return null;
 			default:
-				throw new NotSupportedException($"Type {reader.TokenType} not supported for flexible string");
+				throw new JsonException($"Type {reader.TokenType} not supported for flexible string");
 		}
 	}
 
