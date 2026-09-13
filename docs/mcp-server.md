@@ -34,7 +34,11 @@ Download the binary for your platform from [GitHub Releases](https://github.com/
 | Linux ARM64 | `tc-mcp-linux-arm64.zip` |
 | Portable (.NET 10) | `tc-mcp-any.zip` |
 
-Each zip contains the executable (`tc-mcp.exe` on Windows, `tc-mcp` on macOS/Linux). Platform-specific builds are self-contained (no .NET runtime required). The portable build requires .NET 10 — run with `dotnet tc-mcp.dll mcp serve`.
+Extract the **entire archive** into a permanent directory and keep its files and subdirectories together. Do not copy just the executable or DLL. Add that directory to your `PATH`, or use its absolute path in commands and MCP configuration.
+
+Platform-specific archives contain `tc-mcp.exe` on Windows or `tc-mcp` on macOS/Linux. They are self-contained ReadyToRun builds with trimming disabled; no .NET runtime installation is required. On macOS/Linux, run `chmod +x tc-mcp` if your extraction tool did not preserve executable permissions.
+
+The portable archive contains `tc-mcp.dll` and its dependencies, without a native executable. It requires .NET 10. Replace `tc-mcp` in CLI examples with `dotnet /path/to/tc-mcp.dll`, including `login` and interactive use. For MCP, use the [portable configuration](#portable-configuration).
 
 ## Authentication
 
@@ -44,7 +48,7 @@ Before using the MCP server, authenticate with TenantCloud:
 tc-mcp login
 ```
 
-This opens a browser window for you to sign in. Tokens are stored in the OS secure credential store (DPAPI on Windows, Keychain on macOS, Secret Service on Linux).
+This signs in using a Chromium browser and persists tokens using OS-backed storage. A usable stored session can be reused; otherwise a temporary browser opens for sign-in. Ordinary signed-in browser windows do not expose CDP automatically. See [browser and storage prerequisites](authentication.md#browser-prerequisites).
 
 To remove stored credentials:
 
@@ -53,6 +57,8 @@ tc-mcp logout
 ```
 
 ## Auto-configuration
+
+Use these commands with a **platform-specific executable**, not the portable DLL. The installer records the process executable path; when launched through `dotnet`, that path would identify `dotnet` without the DLL argument. Portable installations need manual configuration below.
 
 ```bash
 # For Claude Desktop
@@ -65,10 +71,13 @@ tc-mcp install claude-code
 ### What `install` does
 
 **Claude Desktop** — patches the config JSON at:
+
 - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
 - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 
 **Claude Code** — runs `claude mcp add --transport stdio tc-mcp -- <exePath> mcp serve`
+
+Claude Code must be available as `claude` on `PATH`. Automatic Claude Desktop configuration supports Windows and macOS. Restart the client after changing its configuration.
 
 ## Manual configuration
 
@@ -97,6 +106,27 @@ claude mcp add --transport stdio tc-mcp -- /path/to/tc-mcp mcp serve
 
 Use stdio transport with the `tc-mcp` binary path as the command and `mcp serve` as arguments.
 The previous `tc-mcp mcp` invocation remains an alias.
+
+### Portable configuration
+
+Use `dotnet` as the command, with the absolute DLL path before `mcp serve`:
+
+```json
+{
+  "mcpServers": {
+    "tc-mcp": {
+      "command": "dotnet",
+      "args": ["/absolute/path/to/tc-mcp.dll", "mcp", "serve"]
+    }
+  }
+}
+```
+
+The client process must be able to find `dotnet`; otherwise specify its absolute path. On Windows, escape backslashes in JSON paths. With Claude Code:
+
+```bash
+claude mcp add --transport stdio tc-mcp -- dotnet /absolute/path/to/tc-mcp.dll mcp serve
+```
 
 ## Available tools
 
@@ -138,15 +168,11 @@ Missing names can be resolved through the entity resources or paginated list too
 | `tc://unit/{id}` | Unit details, including the parent property name |
 | `tc://contact/{id}` | Contact details |
 
-## Authentication
+## Known limitations
 
-On first use, `tc-mcp` will attempt to authenticate via:
+See the shared [known limitations](client-library.md#known-limitations), especially unconfirmed archived-contact filtering and incomplete MCP error diagnostics. Bounded MCP pages do not repair the client library's separate `GetAll(maxResults)` behavior.
 
-1. **Stored token** — loaded from the OS secure credential store (DPAPI / Keychain / Secret Service)
-2. **Running browser** — extracts tokens from a Chromium browser tab open on `app.tenantcloud.com`
-3. **Interactive login** — launches a browser window for you to sign in
-
-Tokens are cached and refreshed automatically. See [Authentication](authentication.md) for details.
+Before calculating totals, follow every continuation cursor with the same filters. A single page is not an account-wide report. Name enrichment uses a bounded lookup cache and may omit names that can be retrieved through entity resources or further list pages.
 
 ## Example questions to ask your AI agent
 

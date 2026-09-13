@@ -72,7 +72,7 @@ internal sealed class SchemaResource
 		- `propertyId` (long) — Parent property ID
 		- `name` (string) — Unit name
 		- `description` (string?) — Description
-		- `price` (decimal) — Rent price
+			- `price` (decimal?) — Rent price; null means unknown, not zero
 		- `isRented` (bool) — Currently occupied
 		- `isPetAllowed` (bool) — Pets allowed
 		- `isFurnished` (bool) — Furnished

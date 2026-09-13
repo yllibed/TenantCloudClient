@@ -1,92 +1,128 @@
 # Release Process
 
+The 3.0 line is being prepared for its first stable release. Documentation and CI
+preparation do not publish that release: pushing a prepared `release/**` branch
+does. The outstanding items in [#12](https://github.com/yllibed/TenantCloudClient/issues/12)
+remain accepted, documented limitations rather than release blockers.
+
 ## Versioning
 
-This project uses [Nerdbank.GitVersioning](https://github.com/dotnet/Nerdbank.GitVersioning)
-for automatic versioning based on git history. The version is configured in
-[`version.json`](../version.json) at the repo root.
+[Nerdbank.GitVersioning](https://github.com/dotnet/Nerdbank.GitVersioning)
+derives versions from git history and [`version.json`](../version.json).
+The CLI used by CI is pinned to the package version in
+[`Directory.Packages.props`](../src/Directory.Packages.props).
 
-### Version format
+| Branch | Version configuration | NuGet version | GitHub release |
+|--------|-----------------------|---------------|----------------|
+| `master` | `3.0-dev` | `3.0.{height}-dev` | Prerelease |
+| `release/v3.0` | `3.0` | `3.0.{height}` | Stable |
+| Feature branches / PRs | `3.0-dev` | Includes prerelease and commit identification | None |
 
-| Branch | NuGet version | Example | Pre-release? |
-|--------|--------------|---------|:------------:|
-| `master` | `{major}.{minor}.{height}-dev` | `3.0.42-dev` | Yes |
-| `release/**` | `{major}.{minor}.{height}` | `3.0.42` | No |
-| `dev/**` / PRs | `{major}.{minor}.{height}-dev.g{hash}` | `3.0.42-dev.ga1b2c3d` | Yes |
+The patch component is the git version height, not a manually chosen patch
+number. It resets when the major/minor version changes; removing the prerelease
+suffix alone does not reset it. The first stable will therefore be `3.0.x`, not
+necessarily `3.0.0`. Read the computed version rather than guessing it from a
+commit count. Public release refs omit the git hash from the package version.
 
-- **height** = number of commits since `version.json` was last modified.
-- On `master` and `release/**` (public branches), the git hash is omitted.
-- On feature branches and PRs, the git hash is appended to guarantee uniqueness.
+## CI publication contract
 
-## CI Pipeline
+The [workflow](../.github/workflows/ci.yml) runs on pull requests and pushes to
+`master` and `release/**`.
 
-The CI pipeline (`.github/workflows/ci.yml`) runs on **every push** to `master`
-and `release/**`, and on **every pull request**.
+| Trigger | Build, test, pack | Binary targets | Publish packages and GitHub release |
+|---------|-------------------|----------------|-------------------------------------|
+| Pull request | Yes | Portable and Windows x64 | No |
+| Push to `master` | Yes | All configured targets | Prerelease |
+| Push to `release/**` | Yes | All configured targets | Stable |
 
-### What runs when
+All jobs check out the triggering SHA. CI does not change or commit the version
+file. A release branch that still declares a prerelease version is rejected
+before building. The build job resolves the version once and passes it to the
+release job, which targets that same SHA when creating the tag.
 
-| Trigger | Build + Test | NuGet Publish | GitHub Release |
-|---------|:------------:|:-------------:|:--------------:|
-| Pull request | Yes | No | No |
-| Push to `master` | Yes | Yes (pre-release) | No |
-| Push to `release/**` | Yes | Yes (stable) | Yes |
+NuGet publication waits for builds, tests, binary packaging and the portable
+archive smoke test. A successful cross-publish is not an execution test on that
+target OS. Platform archives retain ReadyToRun and all required dependencies;
+the portable archive is framework-dependent and requires .NET 10.
 
-### Required secrets
+Required credentials are `NUGET_API_KEY` for nuget.org and the workflow's
+`GITHUB_TOKEN` for the GitHub release. PRs never execute publication steps.
+Publication to NuGet and GitHub is not atomic: if one succeeds and the other
+fails, inspect the existing packages and tag before retrying. Do not overwrite
+a published version or move its tag; publish a new version for corrections.
 
-| Secret | Description |
-|--------|-------------|
-| `NUGET_API_KEY` | API key for nuget.org (configure in repo Settings > Secrets > Actions) |
-| `GITHUB_TOKEN` | Provided automatically by GitHub Actions (used for creating releases) |
+## 3.0 stable checklist
 
-## Publishing a stable release
+No release date is committed. Complete this checklist on the selected release
+commit and record the results in the release PR or GitHub release notes:
 
-1. **Create the release branch** from `master`:
+- [ ] Review the [v2 migration](client-library.md#migrating-to-v3) and
+  [MCP prerelease migration](mcp-server.md#pagination-and-migration-from-the-previous-mcp-contract).
+- [ ] Keep the [known limitations](client-library.md#known-limitations) visible
+  in the release notes. Issue #12 stays open; this release does not claim to fix
+  strict `GetAll` limits, archived-contact filtering or MCP diagnostics.
+- [ ] Compile the documented C# examples and check local links and packaged
+  NuGet README files.
+- [ ] Build the solution in Release with warnings treated as errors and run
+  the tests. Record authenticated API checks separately from CI tests that skip
+  without credentials; never publish account payloads or tokens as evidence.
+- [ ] Verify extracted portable and Windows R2R archives outside the source
+  tree: startup, a read-only CLI call, REPL paging and MCP tools/resources.
+- [ ] Record platform validation with the tested commit, OS and architecture.
+  The [macOS report on #14](https://github.com/yllibed/TenantCloudClient/pull/14#issuecomment-5649303990)
+  is prior evidence, not a test of a future release commit. It used stored
+  credentials; keep a fresh-browser sign-in check distinct from token reuse.
+- [ ] Confirm all configured binary publications pass and the NuGet metadata,
+  binaries, release version and tag identify the same source commit.
+- [ ] Review release notes covering browser authentication, CLI/REPL/MCP,
+  pagination, nullable prices, framework requirements and known limitations.
+- [ ] Explicitly approve the release-branch push. Preparing documentation or
+  merging a preparation PR is not approval to publish a stable version.
 
-   ```bash
-   git checkout master
-   git pull
-   git checkout -b release/v3.0
-   git push -u origin release/v3.0
-   ```
+Keep Repl at the currently pinned stable dependency for this release. An upgrade
+to a Repl prerelease is a separate change requiring its own validation.
 
-2. **The CI takes care of the rest automatically:**
-   - Detects `-dev` in `version.json` and strips it (commits the change)
-   - Builds, tests, and packs the library
-   - Publishes the stable `.nupkg` to nuget.org
-   - Creates a GitHub Release with auto-generated release notes
+## Prepare a stable release locally
 
-3. **If a hotfix is needed** on the release branch, commit directly to it.
-   The CI will build and publish an incremented patch version.
-
-## Bumping the major/minor version
-
-After creating a release branch, bump the version on `master` for the next
-development cycle:
-
-```bash
-git checkout master
-# Edit version.json: change "3.0-dev" to "3.1-dev" (or "4.0-dev")
-git add version.json
-git commit -m "Bump version to 3.1-dev"
-git push
-```
-
-Alternatively, use the `nbgv` CLI:
-
-```bash
-dotnet tool install -g nbgv
-nbgv prepare-release
-```
-
-This command automatically:
-- Creates a `release/v{version}` branch with the stable version
-- Bumps `master` to the next minor version with `-dev` suffix
-
-## Local version check
-
-To see what version would be produced from your current commit:
+Start from an up-to-date, clean `master`. The following commands create local
+versioning commits and branches; they do not publish anything:
 
 ```bash
-dotnet tool install -g nbgv
-nbgv get-version
+git switch master
+git pull --ff-only
 ```
+
+Install the `nbgv` CLI version matching `Directory.Packages.props` in an isolated
+tool directory. For the current dependency:
+
+```bash
+dotnet tool install nbgv --version 3.9.50 --tool-path ./artifacts/tools
+./artifacts/tools/nbgv prepare-release
+git switch release/v3.0
+./artifacts/tools/nbgv get-version -v NuGetPackageVersion
+```
+
+`prepare-release` creates the stable branch and advances local `master` to the
+next minor development version according to `version.json`. Review both commits
+before pushing either branch. If the release branch already exists, use that
+branch and inspect its version rather than recreating it.
+
+On the release branch, verify that `version.json` declares `3.0` without `-dev`,
+and complete the checklist. The version stays committed in source; CI will not
+strip the suffix for you.
+
+## Publish after approval
+
+**This push publishes stable NuGet packages and a GitHub release automatically:**
+
+```bash
+git push -u origin release/v3.0
+```
+
+Watch the workflow to completion, inspect the release assets and verify that its
+tag points to the approved commit. Then push the reviewed next-development-cycle
+commit on `master` through the normal review process; this triggers a prerelease.
+
+For hotfixes, review and test changes on the release branch before pushing.
+Nerdbank.GitVersioning increments the patch component with git height. Each push
+to that branch can publish another stable version.
