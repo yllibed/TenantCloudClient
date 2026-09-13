@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.IO.Compression;
+using System.Text.Json;
 using AwesomeAssertions;
 using ModelContextProtocol.Client;
 
@@ -22,12 +24,14 @@ public sealed class Given_DotNetToolPackage
 	[TestMethod]
 	public async Task When_PackageIsDistributed_Then_InstalledAndDnxLaunchersWork()
 	{
-		var (packageDirectory, version) = GetPackageUnderTest();
+		var (packageDirectory, packagePath, version) = GetPackageUnderTest();
 		var toolPath = Path.Combine(Path.GetTempPath(), "tenantcloud-tool-" + Guid.NewGuid().ToString("N"));
 		Directory.CreateDirectory(toolPath);
 
 		try
 		{
+			AssertMinimumRuntimeVersion(packagePath);
+
 			var dnxArguments = new List<string> { "dnx", PackageId };
 			if (version.Contains('-', StringComparison.Ordinal))
 			{
@@ -68,6 +72,8 @@ public sealed class Given_DotNetToolPackage
 			repl.ExitCode.Should().Be(0, repl.StandardError);
 			repl.StandardOutput.Should().Contain(">");
 
+			await AssertInstallDnxOptionAsync(toolExecutable).ConfigureAwait(false);
+
 			await AssertMcpContractAsync(toolExecutable, ["mcp", "serve"]).ConfigureAwait(false);
 		}
 		finally
@@ -76,7 +82,19 @@ public sealed class Given_DotNetToolPackage
 		}
 	}
 
-	private static (string PackageDirectory, string Version) GetPackageUnderTest()
+	private static async Task AssertInstallDnxOptionAsync(string toolExecutable)
+	{
+		foreach (var dnxOption in new[] { Array.Empty<string>(), new[] { "--dnx" }, new[] { "--dnx=false" } })
+		{
+			var installArguments = new[] { "install", "unsupported" }.Concat(dnxOption).Append("--no-logo").ToArray();
+			var installer = await RunAsync(toolExecutable, installArguments).ConfigureAwait(false);
+			installer.ExitCode.Should().Be(1);
+			installer.StandardError.Should().Contain("Unknown install target: unsupported")
+				.And.NotContain("Unable to bind parameter");
+		}
+	}
+
+	private static (string PackageDirectory, string PackagePath, string Version) GetPackageUnderTest()
 	{
 		var packageDirectory = Environment.GetEnvironmentVariable("TENANTCLOUD_TOOL_PACKAGE_DIRECTORY");
 		var version = Environment.GetEnvironmentVariable("TENANTCLOUD_TOOL_PACKAGE_VERSION");
@@ -87,8 +105,22 @@ public sealed class Given_DotNetToolPackage
 
 		packageDirectory = Path.GetFullPath(packageDirectory);
 		Directory.Exists(packageDirectory).Should().BeTrue();
-		Directory.GetFiles(packageDirectory, $"{PackageId}.*.nupkg").Should().ContainSingle();
-		return (packageDirectory, version);
+		var packagePath = Directory.GetFiles(packageDirectory, $"{PackageId}.*.nupkg").Should().ContainSingle().Subject;
+		return (packageDirectory, packagePath, version);
+	}
+
+	private static void AssertMinimumRuntimeVersion(string packagePath)
+	{
+		using var package = ZipFile.OpenRead(packagePath);
+		var entry = package.GetEntry("tools/net10.0/any/tenantcloud.runtimeconfig.json");
+		entry.Should().NotBeNull();
+		using var stream = entry!.Open();
+		using var document = JsonDocument.Parse(stream);
+		var runtimeVersion = document.RootElement.GetProperty("runtimeOptions")
+			.GetProperty("framework")
+			.GetProperty("version")
+			.GetString();
+		runtimeVersion.Should().Be("10.0.0");
 	}
 
 	private static async Task AssertMcpContractAsync(string command, string[] arguments)

@@ -158,9 +158,8 @@ public sealed class Given_TenantCloudRepl
 		var launch = InstallCommand.CreateDnxLaunchCommand("3.0.61+abcdef");
 
 		launch.Command.Should().Be("dotnet");
-		launch.Arguments.Should().ContainInOrder(
+		launch.Arguments.Should().Equal(
 			"dnx", "Yllibed.TenantCloudClient.Tool", "--yes", "--", "mcp", "serve");
-		launch.Arguments.Should().NotContain("--prerelease");
 	}
 
 	[TestMethod]
@@ -169,7 +168,7 @@ public sealed class Given_TenantCloudRepl
 		var launch = InstallCommand.CreateDnxLaunchCommand("3.0.61-dev+abcdef");
 
 		launch.Command.Should().Be("dotnet");
-		launch.Arguments.Should().ContainInOrder(
+		launch.Arguments.Should().Equal(
 			"dnx", "Yllibed.TenantCloudClient.Tool", "--prerelease", "--yes", "--", "mcp", "serve");
 	}
 

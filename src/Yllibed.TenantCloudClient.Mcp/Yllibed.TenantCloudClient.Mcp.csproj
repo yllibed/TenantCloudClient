@@ -25,13 +25,16 @@
 		<PackageTags>tenantcloud;cli;repl;mcp;dotnet-tool</PackageTags>
 	</PropertyGroup>
 
-	<PropertyGroup>
+	<PropertyGroup Condition="'$(RuntimeIdentifier)' != ''">
 		<PublishReadyToRun>true</PublishReadyToRun>
 		<PublishSingleFile>true</PublishSingleFile>
+		<PublishSelfContained>true</PublishSelfContained>
+	</PropertyGroup>
+
+	<PropertyGroup>
 		<!-- Repl uses reflection for handler binding and output formatting. -->
 		<PublishTrimmed>false</PublishTrimmed>
 		<EnableTrimAnalyzer>false</EnableTrimAnalyzer>
-		<PublishSelfContained>true</PublishSelfContained>
 	</PropertyGroup>
 
 	<ItemGroup>

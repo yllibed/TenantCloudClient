@@ -12,7 +12,7 @@ internal sealed class ManagementModule : IReplModule
 			.WithDescription("Remove stored tokens.").AutomationHidden();
 		map.Context("install", install =>
 		{
-			install.Map("{target}", (string target, bool dnx) => Results.Exit(InstallCommand.Run(target, dnx)))
+			install.Map("{target}", (string target, bool dnx = false) => Results.Exit(InstallCommand.Run(target, dnx)))
 				.WithDescription("Register with claude-desktop or claude-code.").AutomationHidden();
 		});
 		map.Context("mcp", mcp =>
