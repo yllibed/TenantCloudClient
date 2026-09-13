@@ -39,6 +39,16 @@ using var client = new TcClient(tokenProvider);
 var user = await client.GetUserInfo(ct);
 ```
 
+## Migrating to v3
+
+`TcUnit.Price` is now `decimal?` rather than `decimal`, because TenantCloud can
+return a missing price. Handle `null` explicitly in calculations and display;
+it does not mean a price of zero. JSON nulls and empty price strings become
+`null`; numbers and numeric strings are read using invariant culture.
+
+`TcProperty.Status` remains `string?` and also accepts numeric or boolean JSON
+values. Numeric text is preserved without conversion through floating point.
+
 ## API reference
 
 ### `ITcClient`
