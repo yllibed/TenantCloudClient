@@ -46,11 +46,17 @@ archive smoke test. A successful cross-publish is not an execution test on that
 target OS. Platform archives retain ReadyToRun and all required dependencies;
 the portable archive is framework-dependent and requires .NET 10.
 
-The release job uses the protected `nuget-production` environment. Store
-`NUGET_API_KEY` only as an environment secret, not a repository secret. Its
-required reviewer approves the deployment before the job can access the secret;
-PRs never execute publication steps. The workflow's scoped `GITHUB_TOKEN` creates
-the GitHub release.
+The release job uses the protected `nuget-production` environment. Its required
+reviewer approves the deployment before the job can request a GitHub OIDC token.
+The nuget.org trusted publishing policy must match repository owner `yllibed`,
+repository `TenantCloudClient`, workflow file `ci.yml` and environment
+`nuget-production`. It grants push access for new packages and package versions
+matching `Yllibed.TenantCloudClient*` under the `carl.debilly` package owner.
+
+CI uses the SHA-pinned `NuGet/login` action to exchange the OIDC token for a
+short-lived API key immediately before publishing. No long-lived
+`NUGET_API_KEY` secret is stored in GitHub. PRs never execute publication steps.
+The workflow's scoped `GITHUB_TOKEN` creates the GitHub release.
 
 Publication to NuGet and GitHub is not atomic. Before a retry publishes anything,
 CI checks any existing tag and NuGet packages against the triggering commit using

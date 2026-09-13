@@ -207,6 +207,7 @@ jobs:
     environment: nuget-production
     permissions:
       contents: write
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -307,13 +308,17 @@ jobs:
           cp artifacts/binaries/tc-mcp-*/*.zip "$assets/"
           ls -la "$assets/"
 
+      - name: Authenticate to NuGet
+        id: nuget
+        uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
+        with:
+          user: carl.debilly
+
       - name: Publish to NuGet
-        env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
         run: >-
           dotnet nuget push "artifacts/packages/*.nupkg"
           --source https://api.nuget.org/v3/index.json
-          --api-key "$NUGET_API_KEY"
+          --api-key "${{ steps.nuget.outputs.NUGET_API_KEY }}"
           --skip-duplicate
 
       - name: Create GitHub Release
