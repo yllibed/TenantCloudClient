@@ -3,6 +3,8 @@ namespace Yllibed.TenantCloudClient.Internal;
 internal sealed class TcRequestScheduler(TcRateLimitOptions options, TimeProvider timeProvider) : IDisposable
 {
 	private readonly SemaphoreSlim _gate = new(1, 1);
+	private readonly CancellationTokenSource _shutdown = new();
+	private int _disposed;
 	private long? _lastStart;
 	private long _pauseStart;
 	private TimeSpan _pause;
@@ -11,6 +13,7 @@ internal sealed class TcRequestScheduler(TcRateLimitOptions options, TimeProvide
 
 	public async Task EnterAsync(WaitBudget budget, CancellationToken ct)
 	{
+		ThrowIfDisposed();
 		ct.ThrowIfCancellationRequested();
 		if (!options.Enabled || await _gate.WaitAsync(0, ct).ConfigureAwait(false))
 		{
@@ -21,11 +24,15 @@ internal sealed class TcRequestScheduler(TcRateLimitOptions options, TimeProvide
 			throw budget.Exhausted();
 		}
 		using var timeout = new CancellationTokenSource(budget.Remaining, timeProvider);
-		using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, timeout.Token);
+		using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, timeout.Token, _shutdown.Token);
 		var start = timeProvider.GetTimestamp();
 		try
 		{
 			await _gate.WaitAsync(linked.Token).ConfigureAwait(false);
+		}
+		catch (OperationCanceledException) when (!ct.IsCancellationRequested && Volatile.Read(ref _disposed) != 0)
+		{
+			throw new ObjectDisposedException(nameof(TcClient));
 		}
 		catch (OperationCanceledException) when (!ct.IsCancellationRequested && timeout.IsCancellationRequested)
 		{
@@ -39,6 +46,7 @@ internal sealed class TcRequestScheduler(TcRateLimitOptions options, TimeProvide
 
 	public async Task WaitForTurnAsync(WaitBudget budget, CancellationToken ct)
 	{
+		ThrowIfDisposed();
 		ct.ThrowIfCancellationRequested();
 		if (!options.Enabled)
 		{
@@ -60,14 +68,20 @@ internal sealed class TcRequestScheduler(TcRateLimitOptions options, TimeProvide
 			throw budget.Exhausted();
 		}
 		var waitStart = timeProvider.GetTimestamp();
+		using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, _shutdown.Token);
 		try
 		{
-			await Task.Delay(delay, timeProvider, ct).ConfigureAwait(false);
+			await Task.Delay(delay, timeProvider, linked.Token).ConfigureAwait(false);
+		}
+		catch (OperationCanceledException) when (!ct.IsCancellationRequested && Volatile.Read(ref _disposed) != 0)
+		{
+			throw new ObjectDisposedException(nameof(TcClient));
 		}
 		finally
 		{
 			budget.Charge(waitStart);
 		}
+		ThrowIfDisposed();
 		if (budget.Remaining < TimeSpan.Zero)
 		{
 			throw budget.Exhausted();
@@ -100,7 +114,22 @@ internal sealed class TcRequestScheduler(TcRateLimitOptions options, TimeProvide
 		}
 	}
 
-	public void Dispose() => _gate.Dispose();
+	public void Dispose()
+	{
+		if (Interlocked.Exchange(ref _disposed, 1) == 0)
+		{
+			_shutdown.Cancel();
+		}
+		// Leave the gate and shutdown source undisposed so in-flight calls can unwind safely.
+	}
+
+	private void ThrowIfDisposed()
+	{
+		if (Volatile.Read(ref _disposed) != 0)
+		{
+			throw new ObjectDisposedException(nameof(TcClient));
+		}
+	}
 
 	internal sealed class WaitBudget(TimeSpan remaining, TimeProvider timeProvider)
 	{

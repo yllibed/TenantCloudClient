@@ -209,7 +209,7 @@ public class TcClient : IDisposable, ITcClient
 
 	public void Dispose()
 	{
-		_httpClient.Dispose();
 		_scheduler.Dispose();
+		_httpClient.Dispose();
 	}
 }

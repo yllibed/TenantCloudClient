@@ -213,6 +213,41 @@ public sealed class Given_RateLimiting
 	}
 
 	[TestMethod]
+	public async Task When_DisposedWithActiveAndQueuedReads_Then_WakesQueueWithoutMaskingActiveRead()
+	{
+		using var handler = new BlockedReply(observeCancellation: false);
+		var client = Create(handler, new FakeTimeProvider(), new() { MinRequestInterval = TimeSpan.Zero });
+		var active = client.GetUserInfo(CancellationToken.None);
+		var queued = client.GetUserInfo(CancellationToken.None);
+		handler.Calls.Should().Be(1);
+
+		client.Dispose();
+		handler.Release();
+
+		(await active.WaitAsync(TimeSpan.FromSeconds(5)))!.Id.Should().Be(1);
+		Func<Task> queuedRead = () => queued.WaitAsync(TimeSpan.FromSeconds(5));
+		await queuedRead.Should().ThrowAsync<ObjectDisposedException>();
+		Func<Task> newRead = () => client.GetUserInfo(CancellationToken.None);
+		await newRead.Should().ThrowAsync<ObjectDisposedException>();
+		handler.Calls.Should().Be(1);
+	}
+
+	[TestMethod]
+	public async Task When_DisposedDuringCooldown_Then_WakesPendingRead()
+	{
+		using var handler = new Replies(Limited("10"));
+		var client = Create(handler, new FakeTimeProvider(), new() { MinRequestInterval = TimeSpan.Zero });
+		var pending = client.GetUserInfo(CancellationToken.None);
+		handler.Calls.Should().Be(1);
+
+		client.Dispose();
+
+		Func<Task> read = () => pending.WaitAsync(TimeSpan.FromSeconds(5));
+		await read.Should().ThrowAsync<ObjectDisposedException>();
+		handler.Calls.Should().Be(1);
+	}
+
+	[TestMethod]
 	public async Task When_NetworkIsSlow_Then_DoesNotConsumeWaitBudget()
 	{
 		var time = new FakeTimeProvider();
@@ -333,6 +368,18 @@ public sealed class Given_RateLimiting
 	}
 
 	[TestMethod]
+	public void When_DefaultDependencyInjectionHasAmbientRateLimitOptions_Then_IgnoresThem()
+	{
+		var services = new ServiceCollection();
+		services.AddSingleton<ITcAuthTokenProvider>(new StaticTokenProvider("test-token"));
+		services.AddSingleton(new TcRateLimitOptions { MaxRetries = -1 });
+		services.AddTenantCloudClient();
+
+		using var provider = services.BuildServiceProvider();
+		provider.GetRequiredService<ITcClient>().Should().BeSameAs(provider.GetRequiredService<ITcClient>());
+	}
+
+	[TestMethod]
 	public async Task When_ReplUsesRealClient_Then_RateLimitedReadRecovers()
 	{
 		using var handler = new Replies(Limited("0"), Ok());
@@ -392,7 +439,7 @@ public sealed class Given_RateLimiting
 		public Task<TimeSpan> NextDelay() => _delays.Reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(5));
 	}
 
-	private sealed class BlockedReply : HttpMessageHandler
+	private sealed class BlockedReply(bool observeCancellation = true) : HttpMessageHandler
 	{
 		private readonly TaskCompletionSource _release = new(TaskCreationOptions.RunContinuationsAsynchronously);
 		public int Calls { get; private set; }
@@ -400,7 +447,7 @@ public sealed class Given_RateLimiting
 		protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
 		{
 			Calls++;
-			await _release.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+			await _release.Task.WaitAsync(observeCancellation ? cancellationToken : CancellationToken.None).ConfigureAwait(false);
 			return Ok();
 		}
 	}

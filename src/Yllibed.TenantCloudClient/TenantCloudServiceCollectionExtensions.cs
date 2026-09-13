@@ -13,7 +13,7 @@ public static class TenantCloudServiceCollectionExtensions
 	/// </summary>
 	public static IServiceCollection AddTenantCloudClient(this IServiceCollection services)
 	{
-		services.AddSingleton<ITcClient, TcClient>();
+		services.AddSingleton<ITcClient>(sp => new TcClient(sp.GetRequiredService<ITcAuthTokenProvider>()));
 		return services;
 	}
 
