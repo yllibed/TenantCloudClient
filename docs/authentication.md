@@ -9,7 +9,7 @@ This library authenticates by extracting tokens from a TenantCloud browser sessi
 - Interactive login uses a separate temporary browser profile and a browser-assigned debugging port. Complete sign-in, including any CAPTCHA or MFA, in that window. The temporary browser is closed after token extraction or failure; your normal browser session is not the target of cleanup.
 - Browser sign-in requires a graphical session. Do not expose a CDP port to the network: it grants access to browser session data.
 
-For `tc-mcp`, run `tc-mcp login`. Library consumers must opt into interactive login as shown below; it is disabled by default.
+For the CLI, run `tenantcloud login`. Library consumers must opt into interactive login as shown below; it is disabled by default.
 
 ## How the CDP flow works
 
@@ -61,7 +61,7 @@ services.AddSingleton<ITcTokenStore>(new SecureTokenStore(new SecureTokenStoreOp
 
 ### `FileTokenStore`
 
-Plain JSON file with atomic writes, provided by the CDP package. An option for a library application with provisioned tokens where no credential store is available; it does not remove the need to authenticate or automatically configure `tc-mcp`:
+Plain JSON file with atomic writes, provided by the CDP package. An option for a library application with provisioned tokens where no credential store is available; it does not remove the need to authenticate or automatically configure the `tenantcloud` tool:
 
 ```csharp
 services.AddSingleton<ITcTokenStore>(new FileTokenStore("/path/to/tokens.json"));

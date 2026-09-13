@@ -1,132 +1,220 @@
-# MCP Server (`tc-mcp`)
+# CLI, REPL and MCP Server (`tenantcloud`)
 
-`tc-mcp` exposes TenantCloud data as a CLI, an interactive REPL, and a [Model Context Protocol](https://modelcontextprotocol.io) server, using Repl 0.11.
+`tenantcloud` exposes TenantCloud data as a CLI, an interactive REPL, and a
+[Model Context Protocol](https://modelcontextprotocol.io) server, using Repl
+0.11.
+
+## Installation
+
+The .NET Tool is the recommended distribution. It requires .NET 10. While v3 is
+in prerelease, install or update it with:
+
+```bash
+dotnet tool install --global Yllibed.TenantCloudClient.Tool --prerelease
+dotnet tool update --global Yllibed.TenantCloudClient.Tool --prerelease
+```
+
+After a stable release is available, omit `--prerelease` to stay on stable
+versions.
+
+### Run the latest version with `dnx`
+
+.NET 10 can resolve and run the Tool without keeping an installation. These
+commands intentionally do not pin a version:
+
+```bash
+# Latest stable
+dnx Yllibed.TenantCloudClient.Tool --yes -- list properties
+
+# Latest prerelease, while v3 is in prerelease
+dnx Yllibed.TenantCloudClient.Tool --prerelease --yes -- list properties
+```
+
+Use a normal `dotnet tool install` when repeatability matters. Use `dnx` when
+the goal is to follow the newest version in the selected stable or prerelease
+channel.
+
+### Release archives
+
+Self-contained and portable ZIPs remain available from
+[GitHub Releases](https://github.com/yllibed/TenantCloudClient/releases):
+
+| Platform | Asset |
+|----------|-------|
+| Windows x64 | `tenantcloud-win-x64.zip` |
+| Windows ARM64 | `tenantcloud-win-arm64.zip` |
+| macOS x64 | `tenantcloud-osx-x64.zip` |
+| macOS ARM64 | `tenantcloud-osx-arm64.zip` |
+| Linux x64 | `tenantcloud-linux-x64.zip` |
+| Linux ARM64 | `tenantcloud-linux-arm64.zip` |
+| Portable (.NET 10) | `tenantcloud-any.zip` |
+
+Extract the entire archive into a permanent directory and keep its files and
+subdirectories together. Platform-specific archives contain `tenantcloud.exe`
+on Windows or `tenantcloud` on macOS/Linux. They are self-contained ReadyToRun
+builds with trimming disabled. On macOS/Linux, run `chmod +x tenantcloud` if
+executable permissions were lost during extraction.
+
+The portable archive contains `tenantcloud.dll` and its dependencies. It
+requires .NET 10. Replace `tenantcloud` in examples with
+`dotnet /absolute/path/to/tenantcloud.dll`.
 
 ## CLI and interactive use
 
 ```bash
-tc-mcp list properties --json --result:page-size=20
-tc-mcp list transactions --status=with_balance --json --result:page-size=20
-tc-mcp list --help
-tc-mcp
+tenantcloud list properties --json --result:page-size=20
+tenantcloud list transactions --status=with_balance --json --result:page-size=20
+tenantcloud list --help
+tenantcloud
 ```
 
-With no arguments, the interactive REPL supports contexts: enter `list`, then run
-`properties` or `transactions`. Enter `..` to return to the parent context.
+With no arguments, the interactive REPL supports contexts: enter `list`, then
+run `properties` or `transactions`. Enter `..` to return to the parent context.
 
 The default `json-human` format displays JSON fields as key/value records and
 supports interactive paging. Nested objects and arrays remain compact JSON.
 Use `--json` for machine-readable output; MCP output is unchanged. Explicit
-`--human` selects Repl's built-in renderer, which currently displays CLR metadata
-for JSON objects. Use the default or `--output:json-human` for readable JSON fields.
-
-## Installation
-
-Download the binary for your platform from [GitHub Releases](https://github.com/yllibed/TenantCloudClient/releases):
-
-| Platform | Asset |
-|----------|-------|
-| Windows x64 | `tc-mcp-win-x64.zip` |
-| Windows ARM64 | `tc-mcp-win-arm64.zip` |
-| macOS x64 | `tc-mcp-osx-x64.zip` |
-| macOS ARM64 | `tc-mcp-osx-arm64.zip` |
-| Linux x64 | `tc-mcp-linux-x64.zip` |
-| Linux ARM64 | `tc-mcp-linux-arm64.zip` |
-| Portable (.NET 10) | `tc-mcp-any.zip` |
-
-Extract the **entire archive** into a permanent directory and keep its files and subdirectories together. Do not copy just the executable or DLL. Add that directory to your `PATH`, or use its absolute path in commands and MCP configuration.
-
-Platform-specific archives contain `tc-mcp.exe` on Windows or `tc-mcp` on macOS/Linux. They are self-contained ReadyToRun builds with trimming disabled; no .NET runtime installation is required. On macOS/Linux, run `chmod +x tc-mcp` if your extraction tool did not preserve executable permissions.
-
-The portable archive contains `tc-mcp.dll` and its dependencies, without a native executable. It requires .NET 10. Replace `tc-mcp` in CLI examples with `dotnet /path/to/tc-mcp.dll`, including `login` and interactive use. For MCP, use the [portable configuration](#portable-configuration).
+`--human` selects Repl's built-in renderer, which currently displays CLR
+metadata for JSON objects. Use the default or `--output:json-human` for readable
+JSON fields.
 
 ## Authentication
 
-Before using the MCP server, authenticate with TenantCloud:
+Before using the CLI, REPL or MCP server, authenticate with TenantCloud:
 
 ```bash
-tc-mcp login
+tenantcloud login
 ```
 
-This signs in using a Chromium browser and attempts to persist tokens using OS-backed storage. A usable stored session can be reused; otherwise a temporary browser opens for sign-in. If secure storage is unavailable, login can still succeed for the current process but another process will need to authenticate again. Ordinary signed-in browser windows do not expose CDP automatically. See [browser and storage prerequisites](authentication.md#browser-prerequisites).
+This signs in using a Chromium browser and attempts to persist tokens using
+OS-backed storage. A usable stored session can be reused; otherwise a temporary
+browser opens for sign-in. If secure storage is unavailable, login can still
+succeed for the current process but another process will need to authenticate
+again. Ordinary signed-in browser windows do not expose CDP automatically. See
+[browser and storage prerequisites](authentication.md#browser-prerequisites).
 
 To remove stored credentials:
 
 ```bash
-tc-mcp logout
+tenantcloud logout
 ```
 
-## Auto-configuration
+## Automatic MCP configuration
 
-Use these commands with a **platform-specific executable**, not the portable DLL. The installer records the process executable path; when launched through `dotnet`, that path would identify `dotnet` without the DLL argument. Portable installations need manual configuration below.
+Configure Claude Desktop or Claude Code from an installed Tool or a
+platform-specific archive:
 
 ```bash
-# For Claude Desktop
-tc-mcp install claude-desktop
-
-# For Claude Code
-tc-mcp install claude-code
+tenantcloud install claude-desktop
+tenantcloud install claude-code
 ```
 
-### What `install` does
+The default records the current executable, so it follows that installation.
+To make the MCP client resolve the latest Tool version whenever it starts, use:
 
-**Claude Desktop** — patches the config JSON at:
+```bash
+tenantcloud install claude-desktop --dnx
+tenantcloud install claude-code --dnx
+```
+
+The generated stable command is:
+
+```bash
+dotnet dnx Yllibed.TenantCloudClient.Tool --yes -- mcp serve
+```
+
+A prerelease build also includes `--prerelease`. The command does not include a
+version pin. The machine running the MCP client must have the .NET 10 SDK and
+network access when `dnx` needs to resolve the package.
+
+Claude Desktop configuration is written to:
 
 - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
 - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 
-**Claude Code** — runs `claude mcp add --transport stdio tc-mcp -- <exePath> mcp serve`
-
-Claude Code must be available as `claude` on `PATH`. Automatic Claude Desktop configuration supports Windows and macOS. Restart the client after changing its configuration.
+Claude Code registration runs `claude mcp add`. The `claude` command must be on
+`PATH`. Restart the client after changing its configuration.
 
 ## Manual configuration
 
-### Claude Desktop
+The logical MCP server identifier remains `tc-mcp`; only the executable command
+was renamed.
 
-Add to your `claude_desktop_config.json`:
+### Installed Tool or platform-specific archive
 
 ```json
 {
   "mcpServers": {
     "tc-mcp": {
-      "command": "/path/to/tc-mcp",
+      "command": "tenantcloud",
       "args": ["mcp", "serve"]
     }
   }
 }
 ```
 
-### Claude Code
+Use the executable's absolute path if it is not on the MCP client's `PATH`.
+With Claude Code:
 
 ```bash
-claude mcp add --transport stdio tc-mcp -- /path/to/tc-mcp mcp serve
+claude mcp add --transport stdio tc-mcp -- tenantcloud mcp serve
 ```
 
-### Cursor / other MCP clients
+### Latest Tool through `dnx`
 
-Use stdio transport with the `tc-mcp` binary path as the command and `mcp serve` as arguments.
-The previous `tc-mcp mcp` invocation remains an alias.
-
-### Portable configuration
-
-Use `dotnet` as the command, with the absolute DLL path before `mcp serve`:
+Use `dotnet` as the command so the configuration works on every supported
+platform:
 
 ```json
 {
   "mcpServers": {
     "tc-mcp": {
       "command": "dotnet",
-      "args": ["/absolute/path/to/tc-mcp.dll", "mcp", "serve"]
+      "args": ["dnx", "Yllibed.TenantCloudClient.Tool", "--prerelease", "--yes", "--", "mcp", "serve"]
     }
   }
 }
 ```
 
-The client process must be able to find `dotnet`; otherwise specify its absolute path. On Windows, escape backslashes in JSON paths. With Claude Code:
+Remove `--prerelease` after stable v3 is available if the client should follow
+stable releases.
+
+### Portable archive
+
+```json
+{
+  "mcpServers": {
+    "tc-mcp": {
+      "command": "dotnet",
+      "args": ["/absolute/path/to/tenantcloud.dll", "mcp", "serve"]
+    }
+  }
+}
+```
+
+The client process must be able to find `dotnet`; otherwise specify its absolute
+path. On Windows, escape backslashes in JSON paths. With Claude Code:
 
 ```bash
-claude mcp add --transport stdio tc-mcp -- dotnet /absolute/path/to/tc-mcp.dll mcp serve
+claude mcp add --transport stdio tc-mcp -- dotnet /absolute/path/to/tenantcloud.dll mcp serve
 ```
+
+## v3 command migration
+
+Version 3 renames the public executable and .NET Tool command. There is no
+`tc-mcp` shell alias.
+
+| Before v3 | v3 |
+|-----------|----|
+| `tc-mcp login` | `tenantcloud login` |
+| `tc-mcp` | `tenantcloud` |
+| `tc-mcp mcp serve` | `tenantcloud mcp serve` |
+| `tc-mcp-<rid>.zip` | `tenantcloud-<rid>.zip` |
+| `tc-mcp.dll` | `tenantcloud.dll` |
+
+Scripts, shortcuts and manual MCP configurations must use the new executable
+name. The MCP server key `tc-mcp` may remain unchanged. Rerun `tenantcloud
+install ...` to replace an automatically generated launcher.
 
 ## Available tools
 
@@ -157,7 +245,8 @@ The existing name-resolution cache may also load bounded lookup lists.
 
 Resolved names now appear beside foreign keys as `property_name`, `unit_name`,
 `user_client_name`, and `user_payer_name`, instead of a root `references` map.
-Missing names can be resolved through the entity resources or paginated list tools.
+Missing names can be resolved through the entity resources or paginated list
+tools.
 
 ## Available resources
 
@@ -170,9 +259,15 @@ Missing names can be resolved through the entity resources or paginated list too
 
 ## Known limitations
 
-See the shared [known limitations](client-library.md#known-limitations), especially unconfirmed archived-contact filtering and incomplete MCP error diagnostics. Bounded MCP pages do not repair the client library's separate `GetAll(maxResults)` behavior.
+See the shared [known limitations](client-library.md#known-limitations),
+especially unconfirmed archived-contact filtering and incomplete MCP error
+diagnostics. Bounded MCP pages do not repair the client library's separate
+`GetAll(maxResults)` behavior.
 
-Before calculating totals, follow every continuation cursor with the same filters. A single page is not an account-wide report. Name enrichment and entity resources use the same bounded lookup cache. A missing name or entity can appear on a later list page; an entity resource cannot recover a cache miss by itself.
+Before calculating totals, follow every continuation cursor with the same
+filters. A single page is not an account-wide report. Name enrichment and entity
+resources use the same bounded lookup cache. A missing name or entity can appear
+on a later list page; an entity resource cannot recover a cache miss by itself.
 
 ## Example questions to ask your AI agent
 

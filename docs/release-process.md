@@ -29,11 +29,11 @@ commit count. Public release refs omit the git hash from the package version.
 The [workflow](../.github/workflows/ci.yml) runs on pull requests and pushes to
 `master` and `release/**`.
 
-| Trigger | Build, test, pack | Binary targets | Publish packages and GitHub release |
-|---------|-------------------|----------------|-------------------------------------|
-| Pull request | Yes | Portable and Windows x64 | No |
-| Push to `master` | Yes | All configured targets | Prerelease |
-| Push to `release/**` | Yes | All configured targets | Stable |
+| Trigger | Build, test, pack | .NET Tool tests | Binary targets | Publish packages and GitHub release |
+|---------|-------------------|-----------------|----------------|-------------------------------------|
+| Pull request | Yes | Windows, Linux and macOS | Portable and Windows x64 | No |
+| Push to `master` | Yes | Windows, Linux and macOS | All configured targets | Prerelease |
+| Push to `release/**` | Yes | Windows, Linux and macOS | All configured targets | Stable |
 
 All jobs check out the triggering SHA. CI does not change or commit the version
 file. `master` must declare a prerelease version. A release branch must use the
@@ -41,10 +41,14 @@ exact `release/vMAJOR.MINOR` form and declare a matching stable version. The
 build job resolves the version once and passes it to the release job, which
 targets that same SHA when creating the tag.
 
-NuGet publication waits for builds, tests, binary packaging and the portable
-archive smoke test. A successful cross-publish is not an execution test on that
-target OS. Platform archives retain ReadyToRun and all required dependencies;
-the portable archive is framework-dependent and requires .NET 10.
+NuGet publication waits for builds, tests, binary packaging, the portable
+archive smoke test and the .NET Tool distribution tests. The Tool package is
+exercised through MSTest on Windows, Linux and macOS: `dnx`, installation into
+an isolated tool path, CLI help, an interactive REPL session, and MCP
+tool/resource discovery. A successful cross-publish is not an execution test on
+every standalone archive target. Platform archives retain ReadyToRun and all
+required dependencies; the portable archive is framework-dependent and
+requires .NET 10.
 
 The release job uses the protected `nuget-production` environment. Its required
 reviewer approves the deployment before the job can request a GitHub OIDC token.
@@ -70,6 +74,9 @@ commit and record the results in the release PR or GitHub release notes:
 
 - [ ] Review the [v2 migration](client-library.md#migrating-to-v3) and
   [MCP prerelease migration](mcp-server.md#pagination-and-migration-from-the-previous-mcp-contract).
+- [ ] Include the breaking `tc-mcp` to `tenantcloud` command and archive rename
+  from the [v3 command migration](mcp-server.md#v3-command-migration) in release
+  notes. Verify existing MCP configurations have been regenerated or updated.
 - [ ] Keep the [known limitations](client-library.md#known-limitations) visible
   in the release notes. Issue #12 stays open; this release does not claim to fix
   strict `GetAll` limits, archived-contact filtering or MCP diagnostics.
@@ -80,6 +87,9 @@ commit and record the results in the release PR or GitHub release notes:
   without credentials; never publish account payloads or tokens as evidence.
 - [ ] Verify extracted portable and Windows R2R archives outside the source
   tree: startup, a read-only CLI call, REPL paging and MCP tools/resources.
+- [ ] Install `Yllibed.TenantCloudClient.Tool` from the release candidate and
+  verify `tenantcloud`. Run the same candidate through `dnx`; verify both the
+  stable channel and prerelease-channel behavior expected for the branch.
 - [ ] Record platform validation with the tested commit, OS and architecture.
   The [macOS report on #14](https://github.com/yllibed/TenantCloudClient/pull/14#issuecomment-5649303990)
   is prior evidence, not a test of a future release commit. It used stored

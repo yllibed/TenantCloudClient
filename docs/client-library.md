@@ -60,6 +60,7 @@ Compared with the last stable v2.1 release:
 | `ITcClient.Tenants`, `TcTenantDetails` | Use `Contacts` and `TcContact`; apply `OnlyTenants()` when tenant contacts are required |
 | `TcProperty.Attributes` | Read `Name`, `Address1`, `CityAddress` and `Status` directly from the property |
 | `TcTransactionCategory.liability` | Use `TcTransactionCategory.Liability` |
+| `tc-mcp` CLI and executable | Use `tenantcloud`; install `Yllibed.TenantCloudClient.Tool` or use a release archive |
 
 Review code that serializes models or relies on TenantCloud's old field layout: the client now reads the current JSON:API endpoints, and the model shapes have changed. Lease access is available through `ITcClient.Leases`.
 
@@ -71,7 +72,9 @@ it does not mean a price of zero. JSON nulls and empty price strings become
 `TcProperty.Status` is `string?` and also accepts numeric or boolean JSON
 values. Numeric text is preserved without conversion through floating point.
 
-For integrations using a previous MCP prerelease, see the separate [MCP contract migration](mcp-server.md#pagination-and-migration-from-the-previous-mcp-contract).
+For CLI scripts and integrations using a previous MCP prerelease, see the
+separate [v3 command migration](mcp-server.md#v3-command-migration) and
+[MCP contract migration](mcp-server.md#pagination-and-migration-from-the-previous-mcp-contract).
 
 ## Rate limiting
 
