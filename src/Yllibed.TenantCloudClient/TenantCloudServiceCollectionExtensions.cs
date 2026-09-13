@@ -13,7 +13,16 @@ public static class TenantCloudServiceCollectionExtensions
 	/// </summary>
 	public static IServiceCollection AddTenantCloudClient(this IServiceCollection services)
 	{
-		services.AddSingleton<ITcClient, TcClient>();
+		services.AddSingleton<ITcClient>(sp => new TcClient(sp.GetRequiredService<ITcAuthTokenProvider>()));
+		return services;
+	}
+
+	/// <summary>Registers a singleton client with explicit per-instance rate limiting settings.</summary>
+	public static IServiceCollection AddTenantCloudClient(this IServiceCollection services, TcRateLimitOptions options)
+	{
+		ArgumentNullException.ThrowIfNull(options);
+		TcRateLimitOptions.Validate(options);
+		services.AddSingleton<ITcClient>(sp => new TcClient(sp.GetRequiredService<ITcAuthTokenProvider>(), options));
 		return services;
 	}
 

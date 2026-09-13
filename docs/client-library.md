@@ -73,6 +73,55 @@ values. Numeric text is preserved without conversion through floating point.
 
 For integrations using a previous MCP prerelease, see the separate [MCP contract migration](mcp-server.md#pagination-and-migration-from-the-previous-mcp-contract).
 
+## Rate limiting
+
+Each `TcClient` serializes data reads and spaces request starts by at least one
+second by default. All collections, CLI commands, REPL sessions and MCP tools
+using that instance share its cooldown. Separate clients or processes do not.
+Reuse a client instead of creating one per call.
+
+Only HTTP 429 responses are retried, up to three additional attempts. A valid
+`Retry-After` takes precedence; HTTP dates use the response's `Date` when available
+to account for clock skew. Without a valid header, retries wait 1, 2 and 4 seconds,
+each with up to 250 ms of jitter. The minimum request interval still applies.
+The existing single retry after an authentication rejection is independent;
+token refresh requests are not retried by this policy.
+
+Each read has a 30-second total waiting budget, including queueing, pacing and
+retry delays, but excluding network and authentication time. A server delay is
+never shortened to fit this budget. Cancellation or exhausted retries do not
+clear the shared cooldown. Pagination applies the budget separately to each page.
+
+Configure the policy when registering or constructing the client:
+
+```csharp
+var limits = new TcRateLimitOptions
+{
+    MinRequestInterval = TimeSpan.FromSeconds(2),
+    MaxRetries = 2,
+    MaxWait = TimeSpan.FromSeconds(45),
+};
+services.AddTenantCloudClient(limits);
+// Without DI: using var client = new TcClient(tokenProvider, limits);
+```
+
+`Enabled = false` disables serialization, pacing and automatic 429 retries.
+`MaxRetries = 0` disables retries but retains pacing and server cooldowns.
+Negative settings are rejected; `MaxWait` must fit a .NET timer interval
+(at most 4,294,967,294 milliseconds).
+
+An unrecovered 429 throws `TcRateLimitException`, a `TcClientException` with
+`HttpStatus == HttpStatusCode.TooManyRequests`. Its nullable `RetryAfter`, `Limit`
+and `Remaining` properties contain valid server metadata, not the raw response
+body. A local wait-budget failure without a 429 in that read throws
+`TimeoutException`; cancellation remains `OperationCanceledException`.
+
+TenantCloud has returned `X-Ratelimit-Limit` and `X-Ratelimit-Remaining` on
+successful reads, but those headers alone do not identify a quota window.
+The client does not infer a reset time or assume a requests-per-minute limit.
+Default pacing reduces bursts; it cannot guarantee that a shared account will
+never be throttled.
+
 ## API reference
 
 ### `ITcClient`
